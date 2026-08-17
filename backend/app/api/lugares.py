@@ -17,9 +17,14 @@ def listar_lugares(
     categoria: str | None = Query(default=None, description="Slug de categoría, ej: cultural"),
     distrito: str | None = Query(default=None),
     q: str | None = Query(default=None, description="Busca en nombre y distrito"),
+    lat: float | None = Query(default=None, description="Con lon, activa la búsqueda por cercanía (PostGIS)"),
+    lon: float | None = Query(default=None),
+    radio_km: float | None = Query(default=None, ge=0.1, le=50),
     db: Session = Depends(get_db),
 ):
-    return lugares_service.listar(db, categoria_slug=categoria, distrito=distrito, busqueda=q)
+    return lugares_service.listar(
+        db, categoria_slug=categoria, distrito=distrito, busqueda=q, lat=lat, lon=lon, radio_km=radio_km
+    )
 
 
 @router.get("/{lugar_id}", response_model=LugarPublico)
