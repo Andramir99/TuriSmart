@@ -13,12 +13,14 @@ from app.api import (
     auth,
     categorias,
     encuestas,
+    interacciones,
     itinerarios,
     lugares,
     preferencias,
     recomendaciones,
     salud,
     usuarios,
+    valoraciones,
 )
 from app.core.config import get_settings
 
@@ -47,3 +49,5 @@ app.include_router(encuestas.router)
 app.include_router(lugares.router)
 app.include_router(recomendaciones.router)
 app.include_router(itinerarios.router)
+app.include_router(valoraciones.router)
+app.include_router(interacciones.router)
