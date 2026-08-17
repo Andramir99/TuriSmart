@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import { obtenerItinerarioPorId, eliminarItinerario } from '../services/itinerariosService.js'
+import { crearValoracion } from '../services/valoracionesService.js'
 import { claseBadgeCategoria, colorCategoria } from '../utils/categorias.js'
 import {
   infoPresupuesto,
@@ -11,6 +12,7 @@ import {
   formatearHora,
 } from '../utils/itinerarios.js'
 import { ApiError } from '../services/api.js'
+import EstrellasSelector from '../components/EstrellasSelector.jsx'
 import '../styles/itinerario.css'
 
 function ItinerarioDetalle() {
@@ -23,6 +25,12 @@ function ItinerarioDetalle() {
   const [noEncontrado, setNoEncontrado] = useState(false)
   const [error, setError] = useState('')
   const [diasColapsados, setDiasColapsados] = useState({})
+
+  const [puntuacionItinerario, setPuntuacionItinerario] = useState(0)
+  const [comentarioItinerario, setComentarioItinerario] = useState('')
+  const [enviandoValoracion, setEnviandoValoracion] = useState(false)
+  const [errorValoracion, setErrorValoracion] = useState('')
+  const [valoracionEnviada, setValoracionEnviada] = useState(false)
 
   useEffect(() => {
     setCargando(true)
@@ -42,6 +50,33 @@ function ItinerarioDetalle() {
 
   function alternarDia(numero) {
     setDiasColapsados((actual) => ({ ...actual, [numero]: !actual[numero] }))
+  }
+
+  async function manejarEnviarValoracionItinerario(evento) {
+    evento.preventDefault()
+    if (puntuacionItinerario === 0) {
+      setErrorValoracion('Elige al menos una estrella.')
+      return
+    }
+    setErrorValoracion('')
+    setEnviandoValoracion(true)
+    try {
+      await crearValoracion(
+        {
+          itinerario_id: itinerario.id,
+          puntuacion: puntuacionItinerario,
+          comentario: comentarioItinerario.trim() || null,
+        },
+        token,
+      )
+      setValoracionEnviada(true)
+    } catch (err) {
+      setErrorValoracion(
+        err instanceof ApiError ? err.message : 'No se pudo guardar tu valoración.',
+      )
+    } finally {
+      setEnviandoValoracion(false)
+    }
   }
 
   async function manejarEliminar() {
@@ -247,6 +282,44 @@ function ItinerarioDetalle() {
               <p className="mb-0">{itinerario.recomendacion_ia}</p>
             </div>
           )}
+
+          {/* ---- Valorar este itinerario (Etapa 12) ---- */}
+          <div className="ts-card p-3 mb-4">
+            <h2 className="h6 mb-3">Valorar este itinerario</h2>
+            {valoracionEnviada ? (
+              <p className="text-success small mb-0">
+                <i className="bi bi-check-circle-fill me-1"></i>
+                ¡Gracias por tu valoración!
+              </p>
+            ) : (
+              <form onSubmit={manejarEnviarValoracionItinerario}>
+                <div className="mb-2">
+                  <EstrellasSelector valor={puntuacionItinerario} onCambiar={setPuntuacionItinerario} />
+                </div>
+                <textarea
+                  className="form-control form-control-sm mb-2"
+                  rows={2}
+                  maxLength={1000}
+                  placeholder="Comentario (opcional)"
+                  value={comentarioItinerario}
+                  onChange={(evento) => setComentarioItinerario(evento.target.value)}
+                />
+                {errorValoracion && (
+                  <div className="alert alert-danger small py-2 mb-2">{errorValoracion}</div>
+                )}
+                <button type="submit" className="btn btn-ts-primary btn-sm" disabled={enviandoValoracion}>
+                  {enviandoValoracion ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2"></span>
+                      Guardando...
+                    </>
+                  ) : (
+                    'Guardar valoración'
+                  )}
+                </button>
+              </form>
+            )}
+          </div>
 
           <div className="d-flex flex-column gap-2">
             <Link to="/planificar" className="btn btn-ts-primary">

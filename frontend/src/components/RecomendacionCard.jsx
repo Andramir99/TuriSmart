@@ -1,11 +1,38 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { claseBadgeCategoria } from '../utils/categorias.js'
+import { useAuth } from '../context/AuthContext.jsx'
+import { crearInteraccion } from '../services/interaccionesService.js'
 
 // Tarjeta de una recomendación del recomendador inicial (Etapa 9): a
 // diferencia de DestinoCard, aquí el dato central es el "motivo" — la
-// explicación de por qué el sistema sugirió justo este lugar.
+// explicación de por qué el sistema sugirió justo este lugar. Desde la
+// Etapa 12, además deja reaccionar "¿fue útil?" — esa reacción es lo que
+// cierra el ciclo: la recomendación se genera, se muestra, y ahora queda
+// registrado si el usuario la aceptó o no (recomendaciones.fue_aceptada).
 function RecomendacionCard({ recomendacion }) {
   const { lugar, motivo, puntuacion } = recomendacion
+  const { token } = useAuth()
+  const [reaccion, setReaccion] = useState(null) // null | 'aceptada' | 'rechazada'
+  const [enviando, setEnviando] = useState(false)
+
+  async function reaccionar(tipo) {
+    if (enviando || reaccion) return
+    setEnviando(true)
+    try {
+      await crearInteraccion(
+        { lugar_id: lugar.id, tipo_interaccion: `recomendacion_${tipo}` },
+        token,
+      )
+      setReaccion(tipo)
+    } catch {
+      // Si falla, simplemente no se marca como reaccionado — el usuario
+      // puede volver a intentarlo. No bloqueamos el resto de la tarjeta
+      // por esto.
+    } finally {
+      setEnviando(false)
+    }
+  }
 
   return (
     <div className="ts-card h-100">
@@ -29,9 +56,49 @@ function RecomendacionCard({ recomendacion }) {
           <i className="bi bi-stars text-danger me-1"></i>
           {motivo}
         </p>
-        <Link to={`/explorar/${lugar.id}`} className="ts-link-arrow small">
-          Ver más <i className="bi bi-arrow-right"></i>
-        </Link>
+
+        <div className="d-flex justify-content-between align-items-center">
+          <Link to={`/explorar/${lugar.id}`} className="ts-link-arrow small">
+            Ver más <i className="bi bi-arrow-right"></i>
+          </Link>
+
+          {reaccion ? (
+            <span className="small text-muted">
+              {reaccion === 'aceptada' ? (
+                <>
+                  <i className="bi bi-hand-thumbs-up-fill text-success"></i> Útil
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-hand-thumbs-down-fill text-secondary"></i> No útil
+                </>
+              )}
+            </span>
+          ) : (
+            <div className="d-flex gap-1">
+              <button
+                type="button"
+                className="btn btn-sm btn-light border py-0 px-2"
+                onClick={() => reaccionar('aceptada')}
+                disabled={enviando}
+                aria-label="Marcar esta recomendación como útil"
+                title="¿Fue útil?"
+              >
+                <i className="bi bi-hand-thumbs-up"></i>
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-light border py-0 px-2"
+                onClick={() => reaccionar('rechazada')}
+                disabled={enviando}
+                aria-label="Marcar esta recomendación como no útil"
+                title="¿No fue útil?"
+              >
+                <i className="bi bi-hand-thumbs-down"></i>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

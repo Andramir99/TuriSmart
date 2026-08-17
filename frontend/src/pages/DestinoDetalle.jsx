@@ -2,20 +2,38 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { claseBadgeCategoria } from '../utils/categorias.js'
 import { obtenerLugarPorId } from '../services/lugaresService.js'
+import { crearValoracion } from '../services/valoracionesService.js'
+import { crearInteraccion } from '../services/interaccionesService.js'
+import { useAuth } from '../context/AuthContext.jsx'
 import { ApiError } from '../services/api.js'
+import EstrellasSelector from '../components/EstrellasSelector.jsx'
 
 function DestinoDetalle() {
   const { id } = useParams()
+  const { token } = useAuth()
   const [destino, setDestino] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+
+  const [puntuacion, setPuntuacion] = useState(0)
+  const [estadoVisita, setEstadoVisita] = useState('')
+  const [comentario, setComentario] = useState('')
+  const [enviandoValoracion, setEnviandoValoracion] = useState(false)
+  const [errorValoracion, setErrorValoracion] = useState('')
+  const [valoracionEnviada, setValoracionEnviada] = useState(false)
 
   useEffect(() => {
     setCargando(true)
     setError('')
     setDestino(null)
     obtenerLugarPorId(id)
-      .then(setDestino)
+      .then((datos) => {
+        setDestino(datos)
+        // Registro pasivo: "alguien vio este lugar". No bloquea la
+        // pantalla ni muestra error si falla — es solo telemetría para
+        // el futuro dataset del modelo (Etapa 13-14).
+        crearInteraccion({ lugar_id: datos.id, tipo_interaccion: 'vista' }, token).catch(() => {})
+      })
       .catch((err) => {
         setError(
           err instanceof ApiError && err.status === 404
@@ -26,7 +44,54 @@ function DestinoDetalle() {
         )
       })
       .finally(() => setCargando(false))
+    // No metemos "token" en las dependencias a propósito: si el usuario
+    // inicia sesión DESPUÉS de que la página ya cargó, no queremos volver
+    // a pedir el lugar ni duplicar el registro de "vista".
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
+
+  function manejarAgregarAItinerario() {
+    if (destino) {
+      crearInteraccion({ lugar_id: destino.id, tipo_interaccion: 'clic' }, token).catch(() => {})
+    }
+  }
+
+  async function manejarEnviarValoracion(evento) {
+    evento.preventDefault()
+    if (puntuacion === 0) {
+      setErrorValoracion('Elige al menos una estrella.')
+      return
+    }
+    setErrorValoracion('')
+    setEnviandoValoracion(true)
+    try {
+      await crearValoracion(
+        {
+          lugar_id: destino.id,
+          puntuacion,
+          estado_visita: estadoVisita || null,
+          comentario: comentario.trim() || null,
+        },
+        token,
+      )
+      setValoracionEnviada(true)
+      // El promedio ya cambió en el backend; lo reflejamos también acá
+      // sin tener que volver a pedir todo el lugar.
+      setDestino((actual) => ({
+        ...actual,
+        valoracion_promedio:
+          (actual.valoracion_promedio * actual.total_valoraciones + puntuacion) /
+          (actual.total_valoraciones + 1),
+        total_valoraciones: actual.total_valoraciones + 1,
+      }))
+    } catch (err) {
+      setErrorValoracion(
+        err instanceof ApiError ? err.message : 'No se pudo guardar tu valoración.',
+      )
+    } finally {
+      setEnviandoValoracion(false)
+    }
+  }
 
   if (cargando) {
     return (
@@ -79,6 +144,75 @@ function DestinoDetalle() {
               {destino.categoria.nombre}
             </span>
           </div>
+
+          {/* ---- Calificar este lugar (Etapa 12) ---- */}
+          <div className="ts-card p-4 mt-4">
+            <h2 className="h6 mb-3">Calificar este lugar</h2>
+
+            {valoracionEnviada ? (
+              <p className="text-success small mb-0">
+                <i className="bi bi-check-circle-fill me-1"></i>
+                ¡Gracias! Tu valoración quedó guardada.
+              </p>
+            ) : (
+              <form onSubmit={manejarEnviarValoracion}>
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold d-block">Tu puntuación</label>
+                  <EstrellasSelector valor={puntuacion} onCambiar={setPuntuacion} />
+                </div>
+
+                <div className="mb-3">
+                  <label htmlFor="estadoVisita" className="form-label small fw-semibold">
+                    ¿Visitaste este lugar?
+                  </label>
+                  <select
+                    id="estadoVisita"
+                    className="form-select form-select-sm"
+                    value={estadoVisita}
+                    onChange={(evento) => setEstadoVisita(evento.target.value)}
+                  >
+                    <option value="">No especificar</option>
+                    <option value="visitado">Sí, lo visité</option>
+                    <option value="descartado">No, lo descarté</option>
+                    <option value="pendiente">Todavía lo tengo pendiente</option>
+                  </select>
+                </div>
+
+                <div className="mb-3">
+                  <label htmlFor="comentario" className="form-label small fw-semibold">
+                    Comentario (opcional)
+                  </label>
+                  <textarea
+                    id="comentario"
+                    className="form-control form-control-sm"
+                    rows={2}
+                    maxLength={1000}
+                    value={comentario}
+                    onChange={(evento) => setComentario(evento.target.value)}
+                  />
+                </div>
+
+                {errorValoracion && (
+                  <div className="alert alert-danger small py-2 mb-3">{errorValoracion}</div>
+                )}
+
+                <button
+                  type="submit"
+                  className="btn btn-ts-primary btn-sm"
+                  disabled={enviandoValoracion}
+                >
+                  {enviandoValoracion ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2"></span>
+                      Guardando...
+                    </>
+                  ) : (
+                    'Guardar valoración'
+                  )}
+                </button>
+              </form>
+            )}
+          </div>
         </div>
 
         <div className="col-12 col-lg-5">
@@ -123,7 +257,11 @@ function DestinoDetalle() {
             )}
           </ul>
 
-          <Link to="/itinerario" className="btn btn-ts-primary rounded-pill px-4">
+          <Link
+            to="/itinerario"
+            className="btn btn-ts-primary rounded-pill px-4"
+            onClick={manejarAgregarAItinerario}
+          >
             <i className="bi bi-plus-lg me-1"></i> Agregar a mi itinerario
           </Link>
         </div>
