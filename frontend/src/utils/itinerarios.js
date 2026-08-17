@@ -19,25 +19,10 @@ export function infoGrupo(slug) {
   return GRUPOS[slug] || GRUPOS.solo
 }
 
-const MESES = [
-  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
-]
-
-const DIAS_SEMANA = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']
-
-// "2026-06-15" -> "15 de junio de 2026"
-export function formatearFechaLarga(fechaISO) {
-  const fecha = new Date(`${fechaISO}T00:00:00`)
-  return `${fecha.getDate()} de ${MESES[fecha.getMonth()]} de ${fecha.getFullYear()}`
-}
-
-// "2026-06-15" -> "lun, 15 jun."
-export function formatearFechaCorta(fechaISO) {
-  const fecha = new Date(`${fechaISO}T00:00:00`)
-  const mesAbreviado = MESES[fecha.getMonth()].slice(0, 3)
-  return `${DIAS_SEMANA[fecha.getDay()]}, ${fecha.getDate()} ${mesAbreviado}.`
-}
+// El formateo de fechas se movió a utils/fechas.js porque el Dashboard
+// también lo necesita. Se re-exporta aquí para no romper los imports que
+// ya existían desde las páginas de itinerarios.
+export { formatearFechaLarga, formatearFechaCorta } from './fechas.js'
 
 export function totalLugares(itinerario) {
   return itinerario.dias.reduce((total, dia) => total + dia.paradas.length, 0)

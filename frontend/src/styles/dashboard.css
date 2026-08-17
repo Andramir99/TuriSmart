@@ -1,0 +1,148 @@
+/* Estilos exclusivos del Dashboard. */
+
+.ts-status-badge {
+  background: #e6f4ea;
+  color: #2e7d32;
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  font-size: 0.82rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ts-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2e7d32;
+  display: inline-block;
+}
+
+.ts-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+}
+
+.ts-chart-card {
+  background: #fff;
+  border: 1px solid var(--ts-border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  height: 100%;
+}
+
+/* ---- Barras de métricas de usuario ---- */
+.ts-progress-track {
+  height: 8px;
+  background: var(--ts-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.ts-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+/* ---- Mapa de calor (maqueta) ---- */
+.ts-heatmap {
+  position: relative;
+  min-height: 280px;
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: radial-gradient(circle at 30% 20%, #223047 0%, #131a26 60%, #0d1119 100%);
+}
+
+.ts-heat-blob {
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ts-heat-blob::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(224, 90, 78, 0.85) 0%, rgba(224, 90, 78, 0) 70%);
+}
+
+.ts-heat-blob--alta {
+  width: 90px;
+  height: 90px;
+}
+
+.ts-heat-blob--media {
+  width: 65px;
+  height: 65px;
+}
+
+.ts-heat-blob--baja {
+  width: 45px;
+  height: 45px;
+}
+
+.ts-heat-blob--baja::before {
+  background: radial-gradient(circle, rgba(224, 90, 78, 0.45) 0%, rgba(224, 90, 78, 0) 70%);
+}
+
+.ts-heat-label {
+  position: relative;
+  z-index: 1;
+  transform: translateY(140%);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ts-heatmap-legend {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  background: rgba(23, 24, 28, 0.85);
+  color: #e7e7e7;
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.72rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* ---- Tabla de últimos itinerarios ---- */
+.ts-tabla-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.ts-tabla-header th {
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  color: var(--ts-text-muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--ts-border);
+}
