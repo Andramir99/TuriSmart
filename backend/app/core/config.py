@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     # queda vacío: nada en esta etapa lee este valor todavía.
     database_url: str = ""
 
+    # JWT (Etapa 7): jwt_secret_key firma los tokens de sesión. Si alguien
+    # la conociera, podría fabricar tokens válidos para cualquier usuario
+    # — por eso es aleatoria, larga, y vive solo en .env (nunca en Git).
+    jwt_secret_key: str = ""
+    jwt_algoritmo: str = "HS256"
+    jwt_expira_minutos: int = 60 * 24  # 1 día
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     @property
