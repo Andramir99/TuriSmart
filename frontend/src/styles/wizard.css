@@ -1,0 +1,142 @@
+/* Estilos exclusivos del wizard "Planifica tu viaje". */
+
+.ts-wizard-card {
+  background: #fff;
+  border: 1px solid var(--ts-border);
+  border-radius: 16px;
+  padding: 2rem;
+}
+
+/* ---- Indicador de pasos ---- */
+.ts-wizard-step {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--ts-text-muted);
+  font-size: 0.85rem;
+}
+
+.ts-wizard-step-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--ts-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.ts-wizard-step--activo,
+.ts-wizard-step--completo {
+  color: var(--ts-primary);
+}
+
+.ts-wizard-step--activo .ts-wizard-step-circle,
+.ts-wizard-step--completo .ts-wizard-step-circle {
+  border-color: var(--ts-primary);
+  background: var(--ts-primary);
+  color: #fff;
+}
+
+.ts-wizard-steps-track {
+  position: relative;
+  height: 4px;
+  background: var(--ts-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.ts-wizard-steps-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--ts-primary);
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+/* ---- Paso 1: tarjetas de opción (multi-selección) ---- */
+.ts-opcion-card {
+  position: relative;
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border: 1px solid var(--ts-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.ts-opcion-card:hover {
+  border-color: var(--ts-primary);
+}
+
+.ts-opcion-card--activa {
+  border-color: var(--ts-primary);
+  background: #fdf1ef;
+}
+
+.ts-opcion-icono {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--ts-bg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  color: var(--ts-text);
+  margin-bottom: 0.75rem;
+}
+
+.ts-opcion-check {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  color: var(--ts-primary);
+}
+
+/* ---- Paso 2: botones de selección única (presupuesto, grupo) ---- */
+.ts-opcion-boton {
+  background: #fff;
+  border: 1px solid var(--ts-border);
+  border-radius: 12px;
+  padding: 1rem 0.5rem;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ts-text);
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.ts-opcion-boton:hover {
+  border-color: var(--ts-primary);
+}
+
+.ts-opcion-boton--activo {
+  border-color: var(--ts-primary);
+  background: #fdf1ef;
+  color: var(--ts-primary);
+}
+
+/* ---- Paso 3: contexto adicional ---- */
+.ts-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  background: var(--ts-bg);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+}
+
+.ts-resumen-perfil {
+  background: #fdf1ef;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+}
