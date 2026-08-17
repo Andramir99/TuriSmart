@@ -15,10 +15,9 @@ Cómo puntúa cada lugar (pesos en PESO_CATEGORIA/PRESUPUESTO/DISTANCIA):
   - + un pequeño extra según qué tan bien valorado está el lugar en general.
 """
 
-from math import asin, cos, radians, sin, sqrt
-
 from sqlalchemy.orm import Session, joinedload
 
+from app.core.geografia import distancia_km as calcular_distancia_km
 from app.models.lugares import Lugar
 from app.models.modelos_ml import ModeloML
 from app.models.recomendaciones import Recomendacion
@@ -61,18 +60,6 @@ DISTRITOS_COORDS = {
 }
 
 
-def _distancia_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """Distancia en línea recta entre dos coordenadas (fórmula de
-    Haversine). No es la distancia real por calles — para eso haría falta
-    un servicio de rutas, que no es parte de esta etapa.
-    """
-    radio_tierra_km = 6371
-    dlat = radians(lat2 - lat1)
-    dlon = radians(lon2 - lon1)
-    a = sin(dlat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
-    return radio_tierra_km * 2 * asin(sqrt(a))
-
-
 def _puntuar_lugar(
     lugar: Lugar,
     categorias_preferidas: set[str],
@@ -94,7 +81,7 @@ def _puntuar_lugar(
 
     coordenadas_origen = DISTRITOS_COORDS.get(distrito_partida) if distrito_partida else None
     if coordenadas_origen:
-        distancia_km = _distancia_km(*coordenadas_origen, lugar.lat, lugar.lon)
+        distancia_km = calcular_distancia_km(*coordenadas_origen, lugar.lat, lugar.lon)
         limite = distancia_maxima_km or 15.0
         if distancia_km <= limite:
             puntaje_distancia = 1.0 - (distancia_km / limite) * 0.5  # entre 0.5 y 1.0
