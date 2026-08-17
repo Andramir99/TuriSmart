@@ -6,6 +6,7 @@ import Explorar from './pages/Explorar.jsx'
 import DestinoDetalle from './pages/DestinoDetalle.jsx'
 import MapaGIS from './pages/MapaGIS.jsx'
 import MiItinerario from './pages/MiItinerario.jsx'
+import ItinerarioDetalle from './pages/ItinerarioDetalle.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Planificar from './pages/Planificar.jsx'
 import Login from './pages/Login.jsx'
@@ -23,6 +24,7 @@ function App() {
           <Route path="/explorar/:id" element={<DestinoDetalle />} />
           <Route path="/mapa" element={<MapaGIS />} />
           <Route path="/itinerario" element={<MiItinerario />} />
+          <Route path="/itinerario/:id" element={<ItinerarioDetalle />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/planificar" element={<Planificar />} />
           <Route path="/login" element={<Login />} />
