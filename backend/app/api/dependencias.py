@@ -27,6 +27,12 @@ from app.services.usuarios_service import obtener_por_id
 # al usar el botón "Authorize"); el login real vive en POST /auth/login.
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
+# auto_error=False: si no hay token, NO lanza 401 — simplemente devuelve
+# None. Se usa en endpoints como POST /encuestas, que funcionan tanto para
+# alguien anónimo como para alguien con sesión iniciada (y en ese segundo
+# caso, la encuesta queda asociada a su cuenta).
+oauth2_scheme_opcional = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+
 
 def obtener_usuario_actual(
     token: str = Depends(oauth2_scheme),
@@ -48,4 +54,21 @@ def obtener_usuario_actual(
     if usuario is None or not usuario.activo:
         raise credenciales_invalidas
 
+    return usuario
+
+
+def obtener_usuario_opcional(
+    token: str | None = Depends(oauth2_scheme_opcional),
+    db: Session = Depends(get_db),
+) -> Usuario | None:
+    if not token:
+        return None
+    try:
+        payload = decodificar_token(token)
+        usuario = obtener_por_id(db, int(payload.get("sub")))
+    except (jwt.PyJWTError, TypeError, ValueError):
+        return None
+
+    if usuario is None or not usuario.activo:
+        return None
     return usuario
