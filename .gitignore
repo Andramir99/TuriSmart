@@ -1,0 +1,38 @@
+# ===== Sistema operativo / editor =====
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+
+# ===== Frontend (React + Vite) =====
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/npm-debug.log*
+
+# ===== Backend (Python / FastAPI) =====
+backend/.venv/
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+backend/.env
+backend/app/ml/modelos/*.pkl
+backend/app/ml/modelos/*.joblib
+
+# ===== Datos =====
+# Los datos crudos y procesados pueden pesar mucho o contener datos sensibles.
+# Solo se versiona una muestra de ejemplo; el resto se documenta en data/README.md
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# ===== Base de datos local =====
+*.sqlite3
+*.db
+
+# ===== Otros =====
+*.log
+.pytest_cache/
