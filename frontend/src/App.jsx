@@ -3,6 +3,7 @@ import Navbar from './components/Navbar.jsx'
 import Footer from './components/Footer.jsx'
 import Home from './pages/Home.jsx'
 import Explorar from './pages/Explorar.jsx'
+import DestinoDetalle from './pages/DestinoDetalle.jsx'
 import MapaGIS from './pages/MapaGIS.jsx'
 import MiItinerario from './pages/MiItinerario.jsx'
 import Dashboard from './pages/Dashboard.jsx'
@@ -19,6 +20,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/explorar" element={<Explorar />} />
+          <Route path="/explorar/:id" element={<DestinoDetalle />} />
           <Route path="/mapa" element={<MapaGIS />} />
           <Route path="/itinerario" element={<MiItinerario />} />
           <Route path="/dashboard" element={<Dashboard />} />
