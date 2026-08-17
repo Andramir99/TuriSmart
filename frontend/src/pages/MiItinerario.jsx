@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ItinerarioCard from '../components/ItinerarioCard.jsx'
+import RecomendacionCard from '../components/RecomendacionCard.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { obtenerMisItinerarios, eliminarItinerario } from '../services/itinerariosService.js'
+import { generarRecomendacionesML } from '../services/recomendacionesService.js'
 import { ApiError } from '../services/api.js'
 import '../styles/itinerario.css'
 
@@ -11,6 +13,14 @@ function MiItinerario() {
   const [itinerarios, setItinerarios] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+
+  // Recomendador de Machine Learning (Etapa 14-15): a diferencia del de
+  // reglas (que usa el wizard), este usa el historial de valoraciones.
+  // Por eso puede no tener nada que mostrar todavía (mensaje "avisoIA",
+  // no un error) si la persona no calificó ningún lugar aún.
+  const [recomendacionesIA, setRecomendacionesIA] = useState([])
+  const [cargandoIA, setCargandoIA] = useState(true)
+  const [avisoIA, setAvisoIA] = useState('')
 
   const cargar = useCallback(() => {
     setCargando(true)
@@ -28,6 +38,23 @@ function MiItinerario() {
   useEffect(() => {
     cargar()
   }, [cargar])
+
+  useEffect(() => {
+    setCargandoIA(true)
+    setAvisoIA('')
+    generarRecomendacionesML(token)
+      .then(setRecomendacionesIA)
+      .catch((err) => {
+        // Un 409 acá es esperado (sin modelo activo o sin calificaciones
+        // todavía) — no es un error real, así que no se muestra como uno.
+        setAvisoIA(
+          err instanceof ApiError
+            ? err.message
+            : 'No se pudieron calcular recomendaciones con el modelo entrenado.',
+        )
+      })
+      .finally(() => setCargandoIA(false))
+  }, [token])
 
   async function manejarEliminar(id) {
     const itinerario = itinerarios.find((item) => item.id === id)
@@ -67,6 +94,34 @@ function MiItinerario() {
           respuestas en "Planifica tu viaje".
         </span>
       </div>
+
+      {/* ---- Recomendado para ti: modelo de ML entrenado (Etapa 14-15) ---- */}
+      <div className="mb-5">
+        <h2 className="h6 mb-3">
+          <i className="bi bi-cpu me-1"></i> Recomendado para ti (según tu historial)
+        </h2>
+
+        {cargandoIA ? (
+          <p className="text-muted small">
+            <span className="spinner-border spinner-border-sm me-2"></span>
+            Calculando con el modelo entrenado...
+          </p>
+        ) : avisoIA ? (
+          <div className="alert alert-light border small mb-0">
+            <i className="bi bi-info-circle me-1"></i> {avisoIA}
+          </div>
+        ) : (
+          <div className="row g-4">
+            {recomendacionesIA.map((recomendacion) => (
+              <div className="col-6 col-lg-3" key={recomendacion.lugar.id}>
+                <RecomendacionCard recomendacion={recomendacion} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <h2 className="h6 mb-3">Tus itinerarios</h2>
 
       {cargando ? (
         <div className="text-center text-muted py-5">

@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.lugares import LugarPublico
 
@@ -14,3 +16,14 @@ class RecomendacionPublica(BaseModel):
     lugar: LugarPublico
     puntuacion: float
     motivo: str
+
+
+class ModeloActivoPublico(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    nombre: str
+    version: str
+    tipo: str
+    metricas: dict | None
+    fecha_entrenamiento: datetime | None
