@@ -52,29 +52,23 @@
   min-width: 0;
 }
 
-/* ---- "Lienzo" del mapa (maqueta, todavía no es Leaflet) ---- */
+/* ---- Mapa real (Leaflet + OpenStreetMap) ---- */
 .ts-map-canvas {
   position: relative;
   flex: 1;
   min-width: 280px;
   overflow: hidden;
-  background: radial-gradient(circle at 30% 20%, #223047 0%, #131a26 60%, #0d1119 100%);
 }
 
-.ts-map-canvas::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 56px 56px;
-}
-
+/* Leaflet monta sus propios paneles con z-index altos (200-700); estos
+   elementos nuestros necesitan quedar por encima de las teselas del mapa
+   (z-index bajo, ~200) pero no es necesario pelear con los controles de
+   Leaflet mismos, así que con z-index:1000 alcanza y sobra. */
 .ts-map-badge-topleft {
   position: absolute;
   top: 16px;
   left: 16px;
-  z-index: 2;
+  z-index: 1000;
   background: var(--ts-primary);
   color: #fff;
   font-size: 0.8rem;
@@ -83,97 +77,15 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-}
-
-.ts-map-layers-panel {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 2;
-  background: rgba(23, 24, 28, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 0.9rem 1rem;
-  color: #e7e7e7;
-  min-width: 170px;
-}
-
-.ts-map-layers-panel h6 {
-  color: #fff;
-  font-size: 0.85rem;
-  margin-bottom: 0.6rem;
-}
-
-.ts-map-layer-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.82rem;
-  padding: 0.35rem 0;
-}
-
-.ts-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--ts-primary);
-  display: inline-block;
-}
-
-.ts-map-district-label {
-  position: absolute;
-  z-index: 1;
-  color: rgba(255, 255, 255, 0.35);
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  transform: translate(-50%, -50%);
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-.ts-marker {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  z-index: 2;
-  cursor: pointer;
-}
-
-.ts-marker-dot {
-  display: block;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 3px solid #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-  transition: width 0.1s ease, height 0.1s ease;
-}
-
-.ts-marker--active .ts-marker-dot {
-  width: 20px;
-  height: 20px;
-}
-
-.ts-marker-popup {
-  position: absolute;
-  bottom: 26px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #fff;
-  color: var(--ts-text);
-  border-radius: 10px;
-  padding: 0.5rem 0.75rem;
-  min-width: 170px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
-  font-size: 0.78rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 .ts-map-legend {
   position: absolute;
   bottom: 16px;
-  right: 16px;
-  z-index: 2;
-  background: rgba(23, 24, 28, 0.85);
+  left: 16px;
+  z-index: 1000;
+  background: rgba(23, 24, 28, 0.9);
   color: #e7e7e7;
   border-radius: 999px;
   padding: 0.4rem 0.9rem;
@@ -181,6 +93,16 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  max-width: 90%;
+}
+
+/* El popup de Leaflet trae su propio estilo (bordes muy redondeados,
+   padding distinto); lo ajustamos apenas para que combine con el resto
+   de la interfaz sin reescribirlo por completo. */
+.leaflet-popup-content {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.85rem;
+  line-height: 1.5;
 }
 
 @media (max-width: 991.98px) {

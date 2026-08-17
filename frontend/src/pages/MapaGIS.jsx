@@ -1,42 +1,135 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import DestinoListItem from '../components/DestinoListItem.jsx'
 import CategoryPills from '../components/CategoryPills.jsx'
+import MapaLeaflet from '../components/MapaLeaflet.jsx'
+import { useAuth } from '../context/AuthContext.jsx'
 import { useLugares } from '../hooks/useLugares.js'
-import { CATEGORIAS, colorCategoria } from '../utils/categorias.js'
-import { proyectarPosicion, ETIQUETAS_DISTRITOS_MOCK } from '../utils/mapaMock.js'
+import { obtenerLugares } from '../services/lugaresService.js'
+import { obtenerMisItinerarios, obtenerItinerarioPorId } from '../services/itinerariosService.js'
+import { CATEGORIAS } from '../utils/categorias.js'
+import { agruparParadasPorDia } from '../utils/itinerarios.js'
+import { ApiError } from '../services/api.js'
 import '../styles/mapa.css'
 
-// Capas del panel superior derecho. Por ahora son solo visuales (no
-// prenden ni apagan nada real): la capa de tráfico/clima/afluencia de
-// verdad se conecta en la Etapa 11 junto con Leaflet.
-const CAPAS_MOCK = [
-  { id: 'trafico', etiqueta: 'Tráfico', icono: 'bi-signpost-split' },
-  { id: 'clima', etiqueta: 'Clima', icono: 'bi-cloud-sun' },
-  { id: 'afluencia', etiqueta: 'Afluencia', icono: 'bi-people' },
-]
+const COLORES_DIA = ['#c1443c', '#3355cc', '#2e7d32', '#d9822b', '#7b3fb8', '#0891b2']
 
 function MapaGIS() {
+  const { autenticado, token } = useAuth()
   const [categoriaActiva, setCategoriaActiva] = useState('todos')
   const [busqueda, setBusqueda] = useState('')
   const [seleccionadoId, setSeleccionadoId] = useState(null)
+  const [centrarEn, setCentrarEn] = useState(null)
+
   const { lugares, cargando, error, recargar } = useLugares()
 
+  // ---- Modo "Cerca de mí": geolocalización + PostGIS ST_DWithin real ----
+  const [cercaDeMiActivo, setCercaDeMiActivo] = useState(false)
+  const [cercaDeMiLugares, setCercaDeMiLugares] = useState([])
+  const [cercaDeMiCargando, setCercaDeMiCargando] = useState(false)
+  const [cercaDeMiError, setCercaDeMiError] = useState('')
+
+  function activarCercaDeMi() {
+    if (!navigator.geolocation) {
+      setCercaDeMiError('Tu navegador no admite geolocalización.')
+      return
+    }
+    setCercaDeMiCargando(true)
+    setCercaDeMiError('')
+    navigator.geolocation.getCurrentPosition(
+      (posicion) => {
+        const { latitude, longitude } = posicion.coords
+        obtenerLugares({ lat: latitude, lon: longitude, radioKm: 5 })
+          .then((resultado) => {
+            setCercaDeMiLugares(resultado)
+            setCercaDeMiActivo(true)
+            setCentrarEn([latitude, longitude])
+          })
+          .catch((err) => {
+            setCercaDeMiError(
+              err instanceof ApiError ? err.message : 'No se pudo buscar cerca de ti.',
+            )
+          })
+          .finally(() => setCercaDeMiCargando(false))
+      },
+      () => {
+        setCercaDeMiError('No pudimos acceder a tu ubicación. Revisa los permisos del navegador.')
+        setCercaDeMiCargando(false)
+      },
+    )
+  }
+
+  function desactivarCercaDeMi() {
+    setCercaDeMiActivo(false)
+    setCercaDeMiLugares([])
+    setCercaDeMiError('')
+  }
+
+  // ---- Modo "Ver un itinerario en el mapa" ----
+  const [misItinerarios, setMisItinerarios] = useState([])
+  const [itinerarioSeleccionadoId, setItinerarioSeleccionadoId] = useState('')
+  const [itinerarioDetalle, setItinerarioDetalle] = useState(null)
+  const [itinerarioCargando, setItinerarioCargando] = useState(false)
+
+  useEffect(() => {
+    if (!autenticado) return
+    obtenerMisItinerarios(token)
+      .then(setMisItinerarios)
+      .catch(() => {
+        // Silencioso a propósito: si esto falla, el selector simplemente
+        // queda vacío — el resto del mapa sigue funcionando igual.
+      })
+  }, [autenticado, token])
+
+  function seleccionarItinerario(id) {
+    setItinerarioSeleccionadoId(id)
+    if (!id) {
+      setItinerarioDetalle(null)
+      return
+    }
+    desactivarCercaDeMi()
+    setItinerarioCargando(true)
+    obtenerItinerarioPorId(id, token)
+      .then((detalle) => {
+        setItinerarioDetalle(detalle)
+        if (detalle.detalles.length > 0) {
+          const primero = detalle.detalles[0].lugar
+          setCentrarEn([primero.lat, primero.lon])
+        }
+      })
+      .catch(() => setItinerarioDetalle(null))
+      .finally(() => setItinerarioCargando(false))
+  }
+
+  const modoItinerario = Boolean(itinerarioDetalle)
+
   const destinosFiltrados = useMemo(() => {
+    if (modoItinerario) {
+      return itinerarioDetalle.detalles.map((parada) => parada.lugar)
+    }
+    if (cercaDeMiActivo) {
+      return cercaDeMiLugares
+    }
     const texto = busqueda.trim().toLowerCase()
     return lugares.filter((destino) => {
       const coincideCategoria = categoriaActiva === 'todos' || destino.categoria.slug === categoriaActiva
       const coincideTexto = !texto || destino.nombre.toLowerCase().includes(texto)
       return coincideCategoria && coincideTexto
     })
-  }, [lugares, categoriaActiva, busqueda])
+  }, [modoItinerario, itinerarioDetalle, cercaDeMiActivo, cercaDeMiLugares, lugares, categoriaActiva, busqueda])
 
-  function cambiarCategoria(slug) {
-    setCategoriaActiva(slug)
-    setSeleccionadoId(null)
-  }
+  const recorridosPorDia = useMemo(() => {
+    if (!modoItinerario) return []
+    return agruparParadasPorDia(itinerarioDetalle.detalles).map((dia, indice) => ({
+      numero: dia.numero,
+      color: COLORES_DIA[indice % COLORES_DIA.length],
+      puntos: dia.paradas.map((parada) => [parada.lugar.lat, parada.lugar.lon]),
+    }))
+  }, [modoItinerario, itinerarioDetalle])
 
   function alternarSeleccion(id) {
     setSeleccionadoId((actual) => (actual === id ? null : id))
+    const destino = destinosFiltrados.find((item) => item.id === id)
+    if (destino) setCentrarEn([destino.lat, destino.lon])
   }
 
   return (
@@ -44,37 +137,104 @@ function MapaGIS() {
       {/* ---- Sidebar ---- */}
       <aside className="ts-mapa-sidebar">
         <div className="p-3 pb-0">
-          <div className="input-group mb-3">
-            <span className="input-group-text bg-white border-end-0">
-              <i className="bi bi-search text-muted"></i>
-            </span>
-            <input
-              type="search"
-              className="form-control border-start-0"
-              placeholder="Buscar destinos..."
-              value={busqueda}
-              onChange={(evento) => {
-                setBusqueda(evento.target.value)
-                setSeleccionadoId(null)
-              }}
-            />
-          </div>
+          {autenticado && misItinerarios.length > 0 && (
+            <div className="mb-3">
+              <label htmlFor="selectorItinerario" className="form-label small fw-semibold mb-1">
+                Ver un itinerario en el mapa
+              </label>
+              <select
+                id="selectorItinerario"
+                className="form-select form-select-sm"
+                value={itinerarioSeleccionadoId}
+                onChange={(evento) => seleccionarItinerario(evento.target.value)}
+              >
+                <option value="">Catálogo completo</option>
+                {misItinerarios.map((itinerario) => (
+                  <option key={itinerario.id} value={itinerario.id}>
+                    {itinerario.titulo}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-          <div className="mb-3">
-            <CategoryPills
-              categorias={CATEGORIAS}
-              activa={categoriaActiva}
-              onCambiar={cambiarCategoria}
-            />
-          </div>
+          {!modoItinerario && (
+            <>
+              <div className="input-group mb-3">
+                <span className="input-group-text bg-white border-end-0">
+                  <i className="bi bi-search text-muted"></i>
+                </span>
+                <input
+                  type="search"
+                  className="form-control border-start-0"
+                  placeholder="Buscar destinos..."
+                  value={busqueda}
+                  onChange={(evento) => {
+                    setBusqueda(evento.target.value)
+                    setSeleccionadoId(null)
+                    if (cercaDeMiActivo) desactivarCercaDeMi()
+                  }}
+                  disabled={cercaDeMiActivo}
+                />
+              </div>
+
+              <div className="mb-3">
+                <CategoryPills
+                  categorias={CATEGORIAS}
+                  activa={categoriaActiva}
+                  onCambiar={(slug) => {
+                    setCategoriaActiva(slug)
+                    setSeleccionadoId(null)
+                    if (cercaDeMiActivo) desactivarCercaDeMi()
+                  }}
+                />
+              </div>
+
+              {cercaDeMiActivo ? (
+                <button type="button" className="btn btn-sm btn-outline-secondary w-100 mb-2" onClick={desactivarCercaDeMi}>
+                  <i className="bi bi-x-lg me-1"></i> Quitar filtro "Cerca de mí"
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-light border w-100 mb-2"
+                  onClick={activarCercaDeMi}
+                  disabled={cercaDeMiCargando}
+                >
+                  {cercaDeMiCargando ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2"></span>
+                      Ubicándote...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-crosshair me-1"></i> Cerca de mí (5 km)
+                    </>
+                  )}
+                </button>
+              )}
+              {cercaDeMiError && <p className="text-danger small mb-2">{cercaDeMiError}</p>}
+            </>
+          )}
+
+          {modoItinerario && (
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-secondary w-100 mb-2"
+              onClick={() => seleccionarItinerario('')}
+            >
+              <i className="bi bi-x-lg me-1"></i> Volver al catálogo completo
+            </button>
+          )}
 
           <p className="text-muted small mb-1">
-            {destinosFiltrados.length} destinos encontrados
+            {destinosFiltrados.length} destino{destinosFiltrados.length === 1 ? '' : 's'}{' '}
+            {cercaDeMiActivo ? 'a menos de 5 km' : modoItinerario ? 'en este itinerario' : 'encontrados'}
           </p>
         </div>
 
         <div className="ts-mapa-lista px-3">
-          {cargando ? (
+          {cargando || itinerarioCargando ? (
             <p className="text-muted small py-4 text-center">
               <span className="spinner-border spinner-border-sm me-2"></span>
               Cargando destinos...
@@ -108,68 +268,26 @@ function MapaGIS() {
         </div>
       </aside>
 
-      {/* ---- Lienzo del mapa (maqueta visual) ---- */}
+      {/* ---- Mapa real (Leaflet + OpenStreetMap) ---- */}
       <div className="ts-map-canvas">
         <span className="ts-map-badge-topleft">
-          <i className="bi bi-stars"></i> IA activa — {destinosFiltrados.length} destinos
-          visibles
+          <i className="bi bi-stars"></i> {destinosFiltrados.length} destinos visibles
         </span>
 
-        <div className="ts-map-layers-panel">
-          <h6 className="mb-2">Capas</h6>
-          {CAPAS_MOCK.map((capa) => (
-            <div className="ts-map-layer-row" key={capa.id}>
-              <span>
-                <i className={`bi ${capa.icono} me-1`}></i>
-                {capa.etiqueta}
-              </span>
-              <span className="ts-dot"></span>
-            </div>
-          ))}
-        </div>
+        <MapaLeaflet
+          lugares={destinosFiltrados}
+          seleccionadoId={seleccionadoId}
+          onSeleccionar={alternarSeleccion}
+          centrarEn={centrarEn}
+          recorridosPorDia={recorridosPorDia}
+        />
 
-        {ETIQUETAS_DISTRITOS_MOCK.map((etiqueta) => (
-          <span
-            key={etiqueta.nombre}
-            className="ts-map-district-label"
-            style={{ top: etiqueta.top, left: etiqueta.left }}
-          >
-            {etiqueta.nombre}
+        {modoItinerario && (
+          <span className="ts-map-legend">
+            <i className="bi bi-info-circle"></i> Las líneas conectan las paradas en línea
+            recta — no es la ruta real por calles
           </span>
-        ))}
-
-        {destinosFiltrados.map((destino) => {
-          const posicion = proyectarPosicion(destino.lat, destino.lon)
-          const activo = destino.id === seleccionadoId
-          return (
-            <div
-              key={destino.id}
-              className={`ts-marker${activo ? ' ts-marker--active' : ''}`}
-              style={{ top: posicion.top, left: posicion.left }}
-              onClick={() => alternarSeleccion(destino.id)}
-              title={destino.nombre}
-            >
-              {activo && (
-                <div className="ts-marker-popup">
-                  <p className="fw-semibold mb-1">{destino.nombre}</p>
-                  <p className="mb-0 text-muted">
-                    <i className="bi bi-star-fill text-warning"></i>{' '}
-                    {destino.valoracion_promedio.toFixed(1)} · {destino.categoria.nombre}
-                  </p>
-                </div>
-              )}
-              <span
-                className="ts-marker-dot"
-                style={{ backgroundColor: colorCategoria(destino.categoria.slug) }}
-              ></span>
-            </div>
-          )
-        })}
-
-        <span className="ts-map-legend">
-          <i className="bi bi-info-circle"></i> Maqueta visual — el mapa real con Leaflet llega
-          en la Etapa 11
-        </span>
+        )}
       </div>
     </div>
   )
