@@ -101,8 +101,25 @@ def _puntuar_lugar(
         "coincide_categoria": coincide_categoria,
         "coincide_presupuesto": coincide_presupuesto,
         "distancia_km": distancia_km,
+        "limite_km": limite,
         "dentro_del_limite_declarado": dentro_del_limite_declarado,
     }
+
+
+def _etiqueta_distancia(info: dict) -> str | None:
+    """'cerca' / 'moderada' / 'lejos', para que el frontend muestre una
+    etiqueta clara en vez de dejar la distancia escondida en un párrafo.
+    None si no hay distrito de partida (no hay con qué comparar).
+    """
+    distancia_km = info["distancia_km"]
+    if distancia_km is None:
+        return None
+    limite = info["limite_km"]
+    if distancia_km <= limite:
+        return "cerca"
+    if distancia_km <= limite * 2:
+        return "moderada"
+    return "lejos"
 
 
 def _construir_motivo(lugar: Lugar, presupuesto: str, distrito_partida: str | None, info: dict) -> str:
@@ -111,21 +128,27 @@ def _construir_motivo(lugar: Lugar, presupuesto: str, distrito_partida: str | No
         clausulas.append(f"coincide con tu interés en {lugar.categoria.nombre.lower()}")
     if info["coincide_presupuesto"]:
         clausulas.append(f"está dentro de tu presupuesto {presupuesto}")
-    # Solo presumimos la distancia como un plus si de verdad está dentro
-    # de lo que la persona pidió — decir "está a 40 km de tu punto de
-    # partida" no sirve como argumento a favor de recomendarlo.
     if info["distancia_km"] is not None and info["dentro_del_limite_declarado"]:
         clausulas.append(f"se encuentra a {info['distancia_km']:.1f} km de {distrito_partida}")
 
     if not clausulas:
-        return f"{lugar.nombre} es uno de los lugares mejor valorados del catálogo."
-
-    if len(clausulas) == 1:
-        cuerpo = clausulas[0]
+        base = f"{lugar.nombre} es uno de los lugares mejor valorados del catálogo."
+    elif len(clausulas) == 1:
+        base = f"Te recomendamos {lugar.nombre} porque {clausulas[0]}."
     else:
         cuerpo = ", ".join(clausulas[:-1]) + " y " + clausulas[-1]
+        base = f"Te recomendamos {lugar.nombre} porque {cuerpo}."
 
-    return f"Te recomendamos {lugar.nombre} porque {cuerpo}."
+    # Transparencia honesta: si está lejos, se lo decimos en vez de
+    # callarlo — se sigue recomendando por sus otras cualidades, pero el
+    # usuario debe saber que implica más tiempo de traslado.
+    if info["distancia_km"] is not None and not info["dentro_del_limite_declarado"]:
+        base += (
+            f" Eso sí: está a {info['distancia_km']:.1f} km de {distrito_partida}, "
+            f"más lejos de lo que preferiste — considera el tiempo de traslado."
+        )
+
+    return base
 
 
 def _obtener_o_crear_modelo_reglas(db: Session) -> ModeloML:
@@ -149,7 +172,6 @@ def generar_recomendaciones(
     db: Session,
     usuario_id: int | None,
     datos: RecomendacionEntrada,
-    limite: int = 5,
 ) -> list[dict]:
     lugares = db.query(Lugar).options(joinedload(Lugar.categoria)).filter(Lugar.activo.is_(True)).all()
     categorias_preferidas = set(datos.categorias)
@@ -160,18 +182,28 @@ def generar_recomendaciones(
     # distritos alejados (ej. Comas, San Juan de Lurigancho) — y entonces
     # un itinerario de "3 días" terminaba con apenas 2 lugares, porque
     # sencillamente no había suficientes candidatos para repartir. La
-    # distancia influye en el PUNTAJE (más lejos, puntúa más bajo), pero
-    # siempre se devuelven las 5 mejores opciones disponibles.
+    # distancia influye en el PUNTAJE (más lejos, puntúa más bajo) y se
+    # informa con una etiqueta clara, pero nunca descarta un candidato.
     candidatos = []
     for lugar in lugares:
         info = _puntuar_lugar(
             lugar, categorias_preferidas, datos.presupuesto, datos.distrito_partida, datos.distancia_maxima_km
         )
         motivo = _construir_motivo(lugar, datos.presupuesto, datos.distrito_partida, info)
-        candidatos.append({"lugar": lugar, "puntuacion": info["puntaje_total"], "motivo": motivo})
+        candidatos.append(
+            {
+                "lugar": lugar,
+                "puntuacion": info["puntaje_total"],
+                "motivo": motivo,
+                "distancia_km": round(info["distancia_km"], 1) if info["distancia_km"] is not None else None,
+                "distancia_etiqueta": _etiqueta_distancia(info),
+            }
+        )
 
     candidatos.sort(key=lambda item: item["puntuacion"], reverse=True)
-    mejores = candidatos[:limite]
+    # datos.cantidad lo calcula el frontend según los días del viaje (ej.
+    # 3 lugares/día), para que alcancen lugares distintos para cada día.
+    mejores = candidatos[: datos.cantidad]
 
     # Cada recomendación que se le muestra al usuario queda registrada.
     # Es la materia prima de "recomendaciones aceptadas o rechazadas" que

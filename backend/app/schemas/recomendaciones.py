@@ -10,12 +10,22 @@ class RecomendacionEntrada(BaseModel):
     presupuesto: str = Field(default="moderado", pattern="^(economico|moderado|premium)$")
     distrito_partida: str | None = None
     distancia_maxima_km: float | None = Field(default=None, ge=0, le=200)
+    # Cuántas recomendaciones devolver. El wizard (Planificar.jsx) lo
+    # calcula según los días del viaje, para que alcancen lugares
+    # distintos para cada día en vez de repartir siempre las mismas 5.
+    cantidad: int = Field(default=5, ge=1, le=30)
 
 
 class RecomendacionPublica(BaseModel):
     lugar: LugarPublico
     puntuacion: float
     motivo: str
+    # None si no se declaró distrito de partida (no hay con qué comparar).
+    distancia_km: float | None = None
+    # "cerca" | "moderada" | "lejos" | None — para que el frontend pueda
+    # mostrar una etiqueta clara en vez de que la distancia quede oculta
+    # dentro del texto del motivo.
+    distancia_etiqueta: str | None = None
 
 
 class ModeloActivoPublico(BaseModel):

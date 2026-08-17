@@ -4,6 +4,12 @@ import { claseBadgeCategoria } from '../utils/categorias.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import { crearInteraccion } from '../services/interaccionesService.js'
 
+const ETIQUETAS_DISTANCIA = {
+  cerca: { texto: 'Cerca de tu punto de partida', icono: 'bi-geo-alt-fill', clase: 'text-success' },
+  moderada: { texto: 'Distancia moderada', icono: 'bi-signpost-split', clase: 'text-warning' },
+  lejos: { texto: 'Lejos de tu punto de partida', icono: 'bi-signpost-2-fill', clase: 'text-danger' },
+}
+
 // Tarjeta de una recomendación del recomendador inicial (Etapa 9): a
 // diferencia de DestinoCard, aquí el dato central es el "motivo" — la
 // explicación de por qué el sistema sugirió justo este lugar. Desde la
@@ -11,7 +17,9 @@ import { crearInteraccion } from '../services/interaccionesService.js'
 // cierra el ciclo: la recomendación se genera, se muestra, y ahora queda
 // registrado si el usuario la aceptó o no (recomendaciones.fue_aceptada).
 function RecomendacionCard({ recomendacion }) {
-  const { lugar, motivo, puntuacion } = recomendacion
+  const { lugar, motivo, puntuacion, distancia_km: distanciaKm, distancia_etiqueta: distanciaEtiqueta } =
+    recomendacion
+  const infoDistancia = distanciaEtiqueta ? ETIQUETAS_DISTANCIA[distanciaEtiqueta] : null
   const { token } = useAuth()
   const [reaccion, setReaccion] = useState(null) // null | 'aceptada' | 'rechazada'
   const [enviando, setEnviando] = useState(false)
@@ -49,9 +57,16 @@ function RecomendacionCard({ recomendacion }) {
             {Math.round(puntuacion * 100)}% afinidad
           </span>
         </div>
-        <p className="text-muted small mb-2">
+        <p className="text-muted small mb-1">
           <i className="bi bi-geo-alt"></i> {lugar.distrito}
         </p>
+        {infoDistancia && (
+          <p className={`small mb-2 ${infoDistancia.clase}`}>
+            <i className={`bi ${infoDistancia.icono} me-1`}></i>
+            {infoDistancia.texto}
+            {distanciaKm != null && ` (${distanciaKm} km)`}
+          </p>
+        )}
         <p className="small mb-2">
           <i className="bi bi-stars text-danger me-1"></i>
           {motivo}

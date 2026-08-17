@@ -11,7 +11,10 @@ import { enviarEncuesta } from '../services/encuestasService.js'
 import { guardarPreferencias } from '../services/preferenciasService.js'
 import { generarRecomendaciones } from '../services/recomendacionesService.js'
 import { crearItinerario } from '../services/itinerariosService.js'
-import { construirParadasDesdeRecomendaciones } from '../utils/construirItinerario.js'
+import {
+  construirParadasDesdeRecomendaciones,
+  calcularCantidadRecomendaciones,
+} from '../utils/construirItinerario.js'
 import { ApiError } from '../services/api.js'
 import '../styles/wizard.css'
 
@@ -147,6 +150,7 @@ function Planificar() {
             presupuesto: formulario.presupuesto,
             distrito_partida: formulario.distritoPartida || null,
             distancia_maxima_km: formulario.distanciaMaximaKm,
+            cantidad: calcularCantidadRecomendaciones(formulario.duracionDias),
           },
           token,
         )
@@ -202,8 +206,10 @@ function Planificar() {
         </h1>
         <p className="text-muted mb-4 mx-auto" style={{ maxWidth: '560px' }}>
           Guardamos tus preferencias{autenticado ? ' en tu cuenta' : ' de forma anónima'}. Estas
-          son las 5 mejores coincidencias según el recomendador inicial de TuriSmart (basado en
-          reglas de contenido, no todavía en Machine Learning entrenado)
+          son las {recomendaciones.length || calcularCantidadRecomendaciones(formulario.duracionDias)}{' '}
+          mejores coincidencias para tu viaje de {formulario.duracionDias} día
+          {formulario.duracionDias === 1 ? '' : 's'}, según el recomendador inicial de TuriSmart
+          (basado en reglas de contenido, no todavía en Machine Learning entrenado)
           {autenticado ? ', ya repartidas en un itinerario guardado en tu cuenta.' : '.'}
         </p>
 
