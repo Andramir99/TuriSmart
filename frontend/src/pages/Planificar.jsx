@@ -10,6 +10,8 @@ import { obtenerCategorias } from '../services/categoriasService.js'
 import { enviarEncuesta } from '../services/encuestasService.js'
 import { guardarPreferencias } from '../services/preferenciasService.js'
 import { generarRecomendaciones } from '../services/recomendacionesService.js'
+import { crearItinerario } from '../services/itinerariosService.js'
+import { construirParadasDesdeRecomendaciones } from '../utils/construirItinerario.js'
 import { ApiError } from '../services/api.js'
 import '../styles/wizard.css'
 
@@ -42,6 +44,8 @@ function Planificar() {
   const [completado, setCompletado] = useState(false)
   const [recomendaciones, setRecomendaciones] = useState([])
   const [errorRecomendaciones, setErrorRecomendaciones] = useState('')
+  const [itinerarioCreado, setItinerarioCreado] = useState(null)
+  const [errorItinerario, setErrorItinerario] = useState('')
 
   const [categorias, setCategorias] = useState([])
   const [cargandoCategorias, setCargandoCategorias] = useState(true)
@@ -147,6 +151,33 @@ function Planificar() {
           token,
         )
         setRecomendaciones(resultado)
+
+        // Solo con sesión iniciada tiene sentido guardar un itinerario:
+        // "Mis Itinerarios" es una lista ligada a la cuenta (Etapa 10).
+        // Para alguien anónimo, las tarjetas de recomendación de arriba
+        // ya cumplen la promesa de la Home ("sin registro previo").
+        if (autenticado) {
+          try {
+            const paradas = construirParadasDesdeRecomendaciones(resultado, formulario.duracionDias)
+            const nuevoItinerario = await crearItinerario(
+              {
+                titulo: `Lima a tu medida — ${formulario.duracionDias} día${formulario.duracionDias === 1 ? '' : 's'}`,
+                fecha_inicio: formulario.fechaInicio || null,
+                presupuesto: formulario.presupuesto,
+                tipo_grupo: formulario.tipoGrupo,
+                recomendacion_ia:
+                  'Itinerario armado automáticamente a partir de tus 5 mejores recomendaciones.',
+                paradas,
+              },
+              token,
+            )
+            setItinerarioCreado(nuevoItinerario)
+          } catch (err) {
+            setErrorItinerario(
+              err instanceof ApiError ? err.message : 'No se pudo guardar el itinerario.',
+            )
+          }
+        }
       } catch (err) {
         setErrorRecomendaciones(
           err instanceof ApiError ? err.message : 'No se pudieron calcular las recomendaciones.',
@@ -172,7 +203,8 @@ function Planificar() {
         <p className="text-muted mb-4 mx-auto" style={{ maxWidth: '560px' }}>
           Guardamos tus preferencias{autenticado ? ' en tu cuenta' : ' de forma anónima'}. Estas
           son las 5 mejores coincidencias según el recomendador inicial de TuriSmart (basado en
-          reglas de contenido, no todavía en Machine Learning entrenado).
+          reglas de contenido, no todavía en Machine Learning entrenado)
+          {autenticado ? ', ya repartidas en un itinerario guardado en tu cuenta.' : '.'}
         </p>
 
         {errorRecomendaciones ? (
@@ -194,13 +226,27 @@ function Planificar() {
           </div>
         )}
 
+        {autenticado && errorItinerario && (
+          <div className="alert alert-warning d-inline-block mb-4">
+            <i className="bi bi-exclamation-triangle me-1"></i> {errorItinerario}
+          </div>
+        )}
+
         <div className="d-flex justify-content-center gap-3 flex-wrap">
-          <Link to="/explorar" className="btn btn-ts-primary rounded-pill px-4">
+          {itinerarioCreado && (
+            <Link to={`/itinerario/${itinerarioCreado.id}`} className="btn btn-ts-primary rounded-pill px-4">
+              <i className="bi bi-map me-1"></i> Ver mi itinerario
+            </Link>
+          )}
+          <Link
+            to="/explorar"
+            className={`btn rounded-pill px-4 ${itinerarioCreado ? 'btn-light border' : 'btn-ts-primary'}`}
+          >
             Explorar más destinos
           </Link>
           {!autenticado && (
             <Link to="/login" className="btn btn-light border rounded-pill px-4">
-              Crear cuenta
+              Crear cuenta para guardar itinerarios
             </Link>
           )}
         </div>

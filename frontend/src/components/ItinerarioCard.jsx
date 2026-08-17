@@ -1,16 +1,10 @@
 import { Link } from 'react-router-dom'
-import {
-  infoPresupuesto,
-  infoGrupo,
-  formatearFechaLarga,
-  totalActividades,
-} from '../utils/itinerarios.js'
+import { infoPresupuesto, infoGrupo, formatearFechaLarga } from '../utils/itinerarios.js'
 
 function ItinerarioCard({ itinerario, onEliminar }) {
   const presupuesto = infoPresupuesto(itinerario.presupuesto)
-  const grupo = infoGrupo(itinerario.tipoGrupo)
-  const dias = itinerario.dias.length
-  const actividades = totalActividades(itinerario)
+  const grupo = infoGrupo(itinerario.tipo_grupo)
+  const numerosDeDia = Array.from({ length: itinerario.dias }, (_, indice) => indice + 1)
 
   return (
     <div className="ts-card h-100 p-4 d-flex flex-column">
@@ -22,22 +16,22 @@ function ItinerarioCard({ itinerario, onEliminar }) {
       <ul className="list-unstyled small text-muted mb-3 d-flex flex-column gap-2">
         <li>
           <i className="bi bi-calendar3 me-2"></i>
-          {formatearFechaLarga(itinerario.fechaInicio)}
+          {itinerario.fecha_inicio ? formatearFechaLarga(itinerario.fecha_inicio) : 'Sin fecha definida'}
         </li>
         <li>
           <i className={`bi ${grupo.icono} me-2`}></i>
-          {grupo.etiqueta} · {dias} día{dias === 1 ? '' : 's'}
+          {grupo.etiqueta} · {itinerario.dias} día{itinerario.dias === 1 ? '' : 's'}
         </li>
         <li>
           <i className="bi bi-geo-alt me-2"></i>
-          {actividades} actividades en {dias} día{dias === 1 ? '' : 's'}
+          {itinerario.total_lugares} lugares en {itinerario.dias} día{itinerario.dias === 1 ? '' : 's'}
         </li>
       </ul>
 
       <div className="d-flex flex-wrap gap-2 mb-4">
-        {itinerario.dias.map((dia) => (
-          <span key={dia.numero} className="ts-pill">
-            Día {dia.numero}
+        {numerosDeDia.map((numero) => (
+          <span key={numero} className="ts-pill">
+            Día {numero}
           </span>
         ))}
       </div>
@@ -47,11 +41,11 @@ function ItinerarioCard({ itinerario, onEliminar }) {
           <i className="bi bi-eye me-1"></i> Ver
         </Link>
         <Link
-          to={`/itinerario/${itinerario.id}`}
+          to="/planificar"
           className="btn btn-ts-primary flex-grow-1"
-          title="La edición completa llega en la Etapa 10"
+          title="Genera un nuevo itinerario; la edición parada por parada llega más adelante"
         >
-          <i className="bi bi-pencil me-1"></i> Editar
+          <i className="bi bi-plus-lg me-1"></i> Nuevo
         </Link>
         <button
           type="button"

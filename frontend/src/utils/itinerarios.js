@@ -24,13 +24,30 @@ export function infoGrupo(slug) {
 // ya existían desde las páginas de itinerarios.
 export { formatearFechaLarga, formatearFechaCorta } from './fechas.js'
 
-export function totalLugares(itinerario) {
-  return itinerario.dias.reduce((total, dia) => total + dia.paradas.length, 0)
+// El backend (GET /itinerarios/{id}) devuelve "detalles" como una lista
+// plana de paradas, cada una con su dia_numero — a diferencia del mock
+// anterior, que ya venía agrupado en itinerario.dias[]. Esta función
+// arma esa agrupación en el frontend, para no tener que rehacer todo el
+// componente de la línea de tiempo.
+export function agruparParadasPorDia(detalles) {
+  const paradasPorDia = new Map()
+
+  for (const parada of detalles) {
+    if (!paradasPorDia.has(parada.dia_numero)) {
+      paradasPorDia.set(parada.dia_numero, [])
+    }
+    paradasPorDia.get(parada.dia_numero).push(parada)
+  }
+
+  return Array.from(paradasPorDia.entries())
+    .sort(([diaA], [diaB]) => diaA - diaB)
+    .map(([numero, paradas]) => ({
+      numero,
+      paradas: [...paradas].sort((a, b) => a.orden - b.orden),
+    }))
 }
 
-export function totalActividades(itinerario) {
-  // Por ahora cada parada equivale a una actividad; cuando el backend
-  // distinga "lugar visitado" de "actividad dentro del lugar" (Etapa 10),
-  // este cálculo se ajusta sin tocar los componentes que lo usan.
-  return totalLugares(itinerario)
+// "10:30:00" (formato de FastAPI) -> "10:30"
+export function formatearHora(horaISO) {
+  return horaISO ? horaISO.slice(0, 5) : null
 }
