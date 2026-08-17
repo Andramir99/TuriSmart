@@ -1,0 +1,27 @@
+"""Tabla "interacciones": bitácora de eventos del usuario dentro de la
+plataforma (vio un lugar, le dio clic, lo agregó a un itinerario...).
+Junto con "valoraciones", es la materia prima del dataset que se prepara
+en la Etapa 13 para entrenar el modelo de recomendación.
+"""
+
+from datetime import datetime
+
+from sqlalchemy import JSON, DateTime, ForeignKey, String, func
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.database.base import Base
+
+
+class Interaccion(Base):
+    __tablename__ = "interacciones"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id", ondelete="SET NULL"))
+    lugar_id: Mapped[int | None] = mapped_column(ForeignKey("lugares.id", ondelete="SET NULL"))
+    itinerario_id: Mapped[int | None] = mapped_column(ForeignKey("itinerarios.id", ondelete="SET NULL"))
+
+    # 'vista' | 'clic' | 'agregado_itinerario' | 'recomendacion_aceptada' | 'recomendacion_rechazada'
+    tipo_interaccion: Mapped[str] = mapped_column(String(40), nullable=False)
+    metadatos: Mapped[dict | None] = mapped_column(JSON)
+
+    fecha: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
