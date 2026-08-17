@@ -31,6 +31,7 @@ function ItinerarioDetalle() {
   const [enviandoValoracion, setEnviandoValoracion] = useState(false)
   const [errorValoracion, setErrorValoracion] = useState('')
   const [valoracionEnviada, setValoracionEnviada] = useState(false)
+  const [mensajeCompartir, setMensajeCompartir] = useState('')
 
   useEffect(() => {
     setCargando(true)
@@ -76,6 +77,46 @@ function ItinerarioDetalle() {
       )
     } finally {
       setEnviandoValoracion(false)
+    }
+  }
+
+  function manejarExportarPDF() {
+    // Sin backend dedicado a generar PDF: se apoya en la función de
+    // imprimir del navegador (con estilos @media print que ocultan todo
+    // lo que no es el itinerario, ver global.css). Desde el diálogo de
+    // impresión, "Guardar como PDF" es una opción estándar del sistema.
+    // Se expanden todos los días primero: uno que quedó colapsado en
+    // pantalla no debería desaparecer también del PDF.
+    setDiasColapsados({})
+    setTimeout(() => window.print(), 50)
+  }
+
+  async function manejarCompartir() {
+    const url = window.location.href
+    const datosCompartir = {
+      title: itinerario.titulo,
+      text: `Mira mi itinerario "${itinerario.titulo}" en TuriSmart Lima`,
+      url,
+    }
+
+    if (navigator.share) {
+      try {
+        await navigator.share(datosCompartir)
+      } catch {
+        // El usuario cerró el diálogo de compartir sin elegir nada —
+        // no es un error real, no hace falta avisar nada.
+      }
+      return
+    }
+
+    if (navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(url)
+        setMensajeCompartir('Enlace copiado al portapapeles')
+      } catch {
+        setMensajeCompartir('No se pudo copiar el enlace')
+      }
+      setTimeout(() => setMensajeCompartir(''), 3000)
     }
   }
 
@@ -132,7 +173,7 @@ function ItinerarioDetalle() {
     <div className="container py-5">
       <Link
         to="/itinerario"
-        className="ts-link-arrow small d-inline-flex align-items-center gap-1 mb-3"
+        className="ts-link-arrow small d-inline-flex align-items-center gap-1 mb-3 ts-no-imprimir"
       >
         <i className="bi bi-arrow-left"></i> Volver a mis itinerarios
       </Link>
@@ -159,6 +200,19 @@ function ItinerarioDetalle() {
               {presupuesto.etiqueta}
             </span>
           </p>
+        </div>
+
+        <div className="d-flex align-items-center gap-2 ts-no-imprimir">
+          {mensajeCompartir && <span className="small text-success">{mensajeCompartir}</span>}
+          <button type="button" className="btn btn-light border" onClick={manejarCompartir}>
+            <i className="bi bi-share me-1"></i> Compartir
+          </button>
+          <button type="button" className="btn btn-light border" onClick={manejarExportarPDF}>
+            <i className="bi bi-download me-1"></i> PDF
+          </button>
+          <Link to="/planificar" className="btn btn-ts-primary">
+            <i className="bi bi-pencil me-1"></i> Editar
+          </Link>
         </div>
       </div>
 
@@ -284,7 +338,7 @@ function ItinerarioDetalle() {
           )}
 
           {/* ---- Valorar este itinerario (Etapa 12) ---- */}
-          <div className="ts-card p-3 mb-4">
+          <div className="ts-card p-3 mb-4 ts-no-imprimir">
             <h2 className="h6 mb-3">Valorar este itinerario</h2>
             {valoracionEnviada ? (
               <p className="text-success small mb-0">
@@ -321,9 +375,15 @@ function ItinerarioDetalle() {
             )}
           </div>
 
-          <div className="d-flex flex-column gap-2">
+          <div className="d-flex flex-column gap-2 ts-no-imprimir">
+            <button type="button" className="btn btn-light border" onClick={manejarExportarPDF}>
+              <i className="bi bi-download me-1"></i> Exportar PDF
+            </button>
+            <button type="button" className="btn btn-light border" onClick={manejarCompartir}>
+              <i className="bi bi-share me-1"></i> Compartir itinerario
+            </button>
             <Link to="/planificar" className="btn btn-ts-primary">
-              <i className="bi bi-plus-lg me-1"></i> Generar uno nuevo
+              <i className="bi bi-pencil me-1"></i> Editar itinerario
             </Link>
             <button type="button" className="btn btn-outline-danger" onClick={manejarEliminar}>
               <i className="bi bi-trash me-1"></i> Eliminar itinerario

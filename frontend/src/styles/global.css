@@ -248,3 +248,20 @@ h3,
   padding: 0.15rem 0.5rem;
   border-radius: 999px;
 }
+
+/* ---- Impresión ("Exportar PDF" usa window.print()) ----
+   Cualquier elemento con la clase .ts-no-imprimir (navbar, footer,
+   botones de acción) desaparece al imprimir; el contenido queda solo. */
+@media print {
+  .ts-no-imprimir {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  a[href]::after {
+    content: '';
+  }
+}

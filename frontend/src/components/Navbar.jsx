@@ -21,7 +21,7 @@ function Navbar() {
   }
 
   return (
-    <header className="border-bottom bg-white sticky-top">
+    <header className="border-bottom bg-white sticky-top ts-no-imprimir">
       <nav className="navbar navbar-expand-lg container py-2">
         <Link to="/" className="navbar-brand d-flex align-items-center gap-2">
           <span className="ts-logo-badge">

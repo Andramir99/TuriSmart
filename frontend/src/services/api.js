@@ -23,6 +23,22 @@ function extraerMensaje(datos) {
   return 'Ocurrió un error al comunicarse con el servidor.'
 }
 
+// Algunas respuestas (ej. 204 No Content, como DELETE /itinerarios/{id})
+// vienen con el cuerpo vacío pero IGUAL con el header
+// "Content-Type: application/json" — confiar en ese header y llamar
+// directo a response.json() revienta con un SyntaxError porque no hay
+// nada que parsear. Por eso se lee como texto primero, y solo se
+// intenta convertir a JSON si de verdad hay contenido.
+async function leerCuerpoJSON(respuesta) {
+  const texto = await respuesta.text()
+  if (!texto) return null
+  try {
+    return JSON.parse(texto)
+  } catch {
+    return null
+  }
+}
+
 export async function solicitar(ruta, { metodo = 'GET', cuerpo, token } = {}) {
   const headers = { 'Content-Type': 'application/json' }
   if (token) headers.Authorization = `Bearer ${token}`
@@ -38,8 +54,7 @@ export async function solicitar(ruta, { metodo = 'GET', cuerpo, token } = {}) {
     throw new ApiError('No se pudo conectar con el servidor. ¿Está corriendo el backend?', 0)
   }
 
-  const tipoContenido = respuesta.headers.get('content-type') || ''
-  const datos = tipoContenido.includes('application/json') ? await respuesta.json() : null
+  const datos = await leerCuerpoJSON(respuesta)
 
   if (!respuesta.ok) {
     throw new ApiError(extraerMensaje(datos), respuesta.status, datos)
