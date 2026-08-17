@@ -238,3 +238,13 @@ h3,
 .ts-link-arrow:hover {
   text-decoration: underline;
 }
+
+/* Mismos colores que .ts-badge, pero en línea (no posicionado sobre una
+   imagen) — se usa en el listado lateral del Mapa GIS. */
+.ts-badge-inline {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}

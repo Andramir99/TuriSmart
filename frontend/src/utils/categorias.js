@@ -26,3 +26,18 @@ export function etiquetaCategoria(slug) {
   const encontrada = CATEGORIAS.find((categoria) => categoria.slug === slug)
   return encontrada ? encontrada.label : slug
 }
+
+// Mismos colores que las etiquetas (.ts-badge--*), pero en hexadecimal:
+// los marcadores del mapa se pintan con "backgroundColor" en línea, no con
+// clases CSS, porque su posición ya se calcula dinámicamente en JS.
+const COLOR_HEX_POR_CATEGORIA = {
+  cultural: '#c1443c',
+  natural: '#2e7d32',
+  gastronomico: '#d9822b',
+  aventura: '#3355cc',
+  arqueologico: '#7b3fb8',
+}
+
+export function colorCategoria(slug) {
+  return COLOR_HEX_POR_CATEGORIA[slug] || COLOR_HEX_POR_CATEGORIA.cultural
+}

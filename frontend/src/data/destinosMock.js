@@ -7,6 +7,10 @@
 // tendrá la tabla "lugares" (id, nombre, distrito, categoría, coordenadas,
 // rating, etc.) para que el cambio futuro sea solo cuestión de reemplazar
 // el origen de los datos, no la forma en que los componentes los usan.
+//
+// lat/lon son coordenadas reales aproximadas (no inventadas): la idea es
+// que cuando conectemos Leaflet de verdad en la Etapa 11, estos mismos
+// valores sirvan tal cual, sin tener que volver a buscarlos.
 const destinosMock = [
   {
     id: 1,
@@ -16,6 +20,8 @@ const destinosMock = [
     imagen: 'https://picsum.photos/seed/museo-larco/480/360',
     rating: 4.8,
     resenas: 3240,
+    lat: -12.0733,
+    lon: -77.0717,
   },
   {
     id: 2,
@@ -25,6 +31,8 @@ const destinosMock = [
     imagen: 'https://picsum.photos/seed/malecon-miraflores/480/360',
     rating: 4.9,
     resenas: 8640,
+    lat: -12.1211,
+    lon: -77.0324,
   },
   {
     id: 3,
@@ -34,6 +42,8 @@ const destinosMock = [
     imagen: 'https://picsum.photos/seed/pachacamac/480/360',
     rating: 4.6,
     resenas: 2150,
+    lat: -12.2568,
+    lon: -76.9022,
   },
   {
     id: 4,
@@ -43,6 +53,8 @@ const destinosMock = [
     imagen: 'https://picsum.photos/seed/barranco-suspiros/480/360',
     rating: 4.7,
     resenas: 4380,
+    lat: -12.1494,
+    lon: -77.0203,
   },
   {
     id: 5,
@@ -52,6 +64,8 @@ const destinosMock = [
     imagen: 'https://picsum.photos/seed/circuito-magico-agua/480/360',
     rating: 4.5,
     resenas: 6720,
+    lat: -12.0757,
+    lon: -77.0332,
   },
   {
     id: 6,
@@ -61,6 +75,8 @@ const destinosMock = [
     imagen: 'https://picsum.photos/seed/lomas-lucumo/480/360',
     rating: 4.6,
     resenas: 1890,
+    lat: -12.335,
+    lon: -76.82,
   },
   {
     id: 7,
@@ -70,6 +86,8 @@ const destinosMock = [
     imagen: 'https://picsum.photos/seed/costa-verde/480/360',
     rating: 4.2,
     resenas: 2980,
+    lat: -12.135,
+    lon: -77.03,
   },
   {
     id: 8,
@@ -79,6 +97,8 @@ const destinosMock = [
     imagen: 'https://picsum.photos/seed/bosque-el-olivar/480/360',
     rating: 4.5,
     resenas: 3410,
+    lat: -12.097,
+    lon: -77.035,
   },
 ]
 
