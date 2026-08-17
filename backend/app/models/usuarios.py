@@ -23,6 +23,12 @@ class Usuario(Base):
     contrasena_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     rol: Mapped[str] = mapped_column(String(20), nullable=False, default="turista")
     activo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    # True solo en cuentas creadas por scripts/03_generar_datos_sinteticos.py
+    # (Etapa 13/14): permite entrenar el modelo con suficiente volumen sin
+    # confundir estas cuentas de prueba con usuarios reales de la tesis.
+    es_sintetico: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
     fecha_registro: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # "uselist=False" porque es una relación 1 a 1 (un usuario tiene, a lo
