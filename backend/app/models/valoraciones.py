@@ -7,7 +7,7 @@ datos, para no complicar el modelo con un CHECK constraint prematuro).
 
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
@@ -30,5 +30,8 @@ class Valoracion(Base):
     # 'visitado' | 'descartado' | 'pendiente'
     estado_visita: Mapped[str | None] = mapped_column(String(20))
     comentario: Mapped[str | None] = mapped_column(Text)
+
+    # Ver Encuesta.es_sintetico: misma idea, misma Etapa 13.
+    es_sintetico: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     fecha: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

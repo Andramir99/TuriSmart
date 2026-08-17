@@ -6,7 +6,7 @@ en la Etapa 13 para entrenar el modelo de recomendación.
 
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, ForeignKey, String, func
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
@@ -23,5 +23,8 @@ class Interaccion(Base):
     # 'vista' | 'clic' | 'agregado_itinerario' | 'recomendacion_aceptada' | 'recomendacion_rechazada'
     tipo_interaccion: Mapped[str] = mapped_column(String(40), nullable=False)
     metadatos: Mapped[dict | None] = mapped_column(JSON)
+
+    # Ver Encuesta.es_sintetico: misma idea, misma Etapa 13.
+    es_sintetico: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     fecha: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

@@ -31,6 +31,13 @@ class Encuesta(Base):
     # encuesta no debería usarse para entrenar el modelo (Etapa 13).
     consentimiento_datos: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     version_encuesta: Mapped[str] = mapped_column(String(10), nullable=False, default="1.0")
+
+    # True solo en las filas creadas por scripts/03_generar_datos_sinteticos.py
+    # (Etapa 13), para que el dataset (Etapa 13) y el entrenamiento del
+    # modelo (Etapa 14) puedan excluirlas y no se confundan con datos
+    # reales de la investigación.
+    es_sintetico: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
     fecha_creacion: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     respuestas: Mapped[list["RespuestaEncuesta"]] = relationship(
