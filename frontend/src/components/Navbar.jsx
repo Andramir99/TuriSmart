@@ -1,4 +1,5 @@
-import { NavLink, Link } from 'react-router-dom'
+import { NavLink, Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext.jsx'
 
 // NavLink (a diferencia de Link) sabe si su URL coincide con la página actual
 // y nos pasa "isActive" para pintar el link seleccionado en rojo, igual que
@@ -11,6 +12,14 @@ function navLinkClass({ isActive }) {
 }
 
 function Navbar() {
+  const { usuario, autenticado, cerrarSesion } = useAuth()
+  const navigate = useNavigate()
+
+  function manejarCerrarSesion() {
+    cerrarSesion()
+    navigate('/')
+  }
+
   return (
     <header className="border-bottom bg-white sticky-top">
       <nav className="navbar navbar-expand-lg container py-2">
@@ -63,9 +72,30 @@ function Navbar() {
             <Link to="/planificar" className="btn btn-ts-primary rounded-pill px-3">
               Planifica tu viaje
             </Link>
-            <Link to="/login" className="ts-user-icon" aria-label="Cuenta">
-              <i className="bi bi-person"></i>
-            </Link>
+
+            {autenticado ? (
+              <div className="d-flex align-items-center gap-2">
+                <span className="ts-user-icon" aria-hidden="true">
+                  <i className="bi bi-person-fill"></i>
+                </span>
+                <span className="small fw-semibold text-truncate" style={{ maxWidth: '120px' }}>
+                  {usuario.nombre.split(' ')[0]}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-light border"
+                  onClick={manejarCerrarSesion}
+                  aria-label="Cerrar sesión"
+                  title="Cerrar sesión"
+                >
+                  <i className="bi bi-box-arrow-right"></i>
+                </button>
+              </div>
+            ) : (
+              <Link to="/login" className="ts-user-icon" aria-label="Cuenta">
+                <i className="bi bi-person"></i>
+              </Link>
+            )}
           </div>
         </div>
       </nav>

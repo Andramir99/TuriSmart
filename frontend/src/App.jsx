@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import Navbar from './components/Navbar.jsx'
 import Footer from './components/Footer.jsx'
+import RutaPrivada from './components/RutaPrivada.jsx'
 import Home from './pages/Home.jsx'
 import Explorar from './pages/Explorar.jsx'
 import DestinoDetalle from './pages/DestinoDetalle.jsx'
@@ -23,9 +24,30 @@ function App() {
           <Route path="/explorar" element={<Explorar />} />
           <Route path="/explorar/:id" element={<DestinoDetalle />} />
           <Route path="/mapa" element={<MapaGIS />} />
-          <Route path="/itinerario" element={<MiItinerario />} />
-          <Route path="/itinerario/:id" element={<ItinerarioDetalle />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route
+            path="/itinerario"
+            element={
+              <RutaPrivada>
+                <MiItinerario />
+              </RutaPrivada>
+            }
+          />
+          <Route
+            path="/itinerario/:id"
+            element={
+              <RutaPrivada>
+                <ItinerarioDetalle />
+              </RutaPrivada>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <RutaPrivada>
+                <Dashboard />
+              </RutaPrivada>
+            }
+          />
           <Route path="/planificar" element={<Planificar />} />
           <Route path="/login" element={<Login />} />
           <Route path="*" element={<PageNotFound />} />
