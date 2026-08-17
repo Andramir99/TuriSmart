@@ -1,3 +1,5 @@
+import { DISTRITOS_LIMA } from '../utils/distritosLima.js'
+
 const PRESUPUESTOS = [
   { slug: 'economico', etiqueta: 'Económico', icono: 'bi-piggy-bank' },
   { slug: 'moderado', etiqueta: 'Moderado', icono: 'bi-credit-card-2-front' },
@@ -51,7 +53,7 @@ function PasoTuViaje({ formulario, onCambiar }) {
       </div>
 
       <p className="form-label fw-semibold mb-2">Tipo de grupo</p>
-      <div className="row g-2">
+      <div className="row g-2 mb-4">
         {GRUPOS.map((opcion) => (
           <div className="col-6 col-md-3" key={opcion.slug}>
             <button
@@ -68,6 +70,23 @@ function PasoTuViaje({ formulario, onCambiar }) {
           </div>
         ))}
       </div>
+
+      <label htmlFor="distritoPartida" className="form-label fw-semibold">
+        Distrito de partida
+      </label>
+      <select
+        id="distritoPartida"
+        className="form-select"
+        value={formulario.distritoPartida}
+        onChange={(evento) => onCambiar('distritoPartida', evento.target.value)}
+      >
+        <option value="">Selecciona un distrito</option>
+        {DISTRITOS_LIMA.map((distrito) => (
+          <option key={distrito} value={distrito}>
+            {distrito}
+          </option>
+        ))}
+      </select>
     </div>
   )
 }

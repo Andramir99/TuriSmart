@@ -1,9 +1,14 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import WizardSteps from '../components/WizardSteps.jsx'
 import PasoTipoViajero from '../components/PasoTipoViajero.jsx'
 import PasoTuViaje from '../components/PasoTuViaje.jsx'
 import PasoContexto from '../components/PasoContexto.jsx'
+import { useAuth } from '../context/AuthContext.jsx'
+import { obtenerCategorias } from '../services/categoriasService.js'
+import { enviarEncuesta } from '../services/encuestasService.js'
+import { guardarPreferencias } from '../services/preferenciasService.js'
+import { ApiError } from '../services/api.js'
 import '../styles/wizard.css'
 
 const TITULOS_PASO = {
@@ -17,16 +22,43 @@ const FORMULARIO_INICIAL = {
   duracionDias: 3,
   presupuesto: 'moderado',
   tipoGrupo: 'pareja',
+  distritoPartida: '',
+  distanciaMaximaKm: 10,
+  horarioPreferido: 'cualquiera',
   movilidadReducida: false,
   idioma: 'es',
   fechaInicio: '',
+  consentimientoDatos: false,
 }
 
 function Planificar() {
-  const navigate = useNavigate()
+  const { token, autenticado } = useAuth()
   const [paso, setPaso] = useState(1)
   const [formulario, setFormulario] = useState(FORMULARIO_INICIAL)
-  const [generando, setGenerando] = useState(false)
+  const [enviando, setEnviando] = useState(false)
+  const [errorEnvio, setErrorEnvio] = useState('')
+  const [completado, setCompletado] = useState(false)
+
+  const [categorias, setCategorias] = useState([])
+  const [cargandoCategorias, setCargandoCategorias] = useState(true)
+  const [errorCategorias, setErrorCategorias] = useState('')
+
+  useEffect(() => {
+    cargarCategorias()
+  }, [])
+
+  function cargarCategorias() {
+    setCargandoCategorias(true)
+    setErrorCategorias('')
+    obtenerCategorias()
+      .then(setCategorias)
+      .catch((err) => {
+        setErrorCategorias(
+          err instanceof ApiError ? err.message : 'No se pudieron cargar las categorías.',
+        )
+      })
+      .finally(() => setCargandoCategorias(false))
+  }
 
   function actualizarCampo(campo, valor) {
     setFormulario((actual) => ({ ...actual, [campo]: valor }))
@@ -44,10 +76,10 @@ function Planificar() {
     })
   }
 
-  // Validación mínima: en el Paso 1 hace falta elegir al menos un interés
-  // para poder avanzar. Etapas futuras (8-9) sumarán más validaciones
-  // cuando esta encuesta se conecte con el backend real.
+  // Validaciones mínimas por paso: no avanzar del 1 sin elegir interés,
+  // no poder enviar el 3 sin dar el consentimiento de datos.
   const puedeAvanzar = paso !== 1 || formulario.tiposViajero.length > 0
+  const puedeEnviar = formulario.consentimientoDatos
 
   function irSiguiente() {
     if (paso < 3) setPaso(paso + 1)
@@ -57,13 +89,79 @@ function Planificar() {
     if (paso > 1) setPaso(paso - 1)
   }
 
-  function generarItinerario() {
-    setGenerando(true)
-    // Simulación de "estado de carga" mientras no existe backend todavía.
-    // En la Etapa 8-9 esto se reemplaza por POST /encuestas + POST /recomendaciones.
-    setTimeout(() => {
-      navigate('/itinerario')
-    }, 900)
+  async function generarItinerario() {
+    setErrorEnvio('')
+    setEnviando(true)
+    try {
+      const respuestas = {
+        categorias_interes: formulario.tiposViajero.join(','),
+        duracion_dias: String(formulario.duracionDias),
+        presupuesto: formulario.presupuesto,
+        tipo_compania: formulario.tipoGrupo,
+        distrito_partida: formulario.distritoPartida,
+        distancia_maxima_km: String(formulario.distanciaMaximaKm),
+        horario_preferido: formulario.horarioPreferido,
+        movilidad_reducida: String(formulario.movilidadReducida),
+        idioma_preferido: formulario.idioma,
+        fecha_inicio: formulario.fechaInicio,
+      }
+
+      await enviarEncuesta(
+        { consentimiento_datos: formulario.consentimientoDatos, respuestas },
+        token,
+      )
+
+      // Si hay sesión iniciada, además dejamos sus preferencias guardadas
+      // en el perfil (Etapa 8: "posibilidad de modificar las preferencias").
+      if (autenticado) {
+        await guardarPreferencias(
+          {
+            presupuesto: formulario.presupuesto,
+            tipo_viaje: formulario.tipoGrupo,
+            tiempo_disponible_dias: formulario.duracionDias,
+            distrito_partida: formulario.distritoPartida || null,
+            distancia_maxima_km: formulario.distanciaMaximaKm,
+            categorias: formulario.tiposViajero,
+          },
+          token,
+        )
+      }
+
+      setCompletado(true)
+    } catch (err) {
+      setErrorEnvio(
+        err instanceof ApiError ? err.message : 'No se pudo guardar la encuesta. Intenta de nuevo.',
+      )
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  if (completado) {
+    return (
+      <div className="container py-5 text-center" style={{ maxWidth: '560px' }}>
+        <p className="ts-eyebrow mb-2">¡Listo!</p>
+        <h1 className="ts-heading mb-3">
+          <i className="bi bi-check-circle-fill text-success me-2"></i>
+          Encuesta registrada
+        </h1>
+        <p className="text-muted mb-4">
+          Guardamos tus preferencias{autenticado ? ' en tu cuenta' : ' de forma anónima'}. El
+          recomendador que arma itinerarios a partir de estas respuestas se conecta en la
+          Etapa 9 — por ahora puedes seguir explorando el catálogo.
+        </p>
+        <div className="d-flex justify-content-center gap-3 flex-wrap">
+          <Link to="/explorar" className="btn btn-ts-primary rounded-pill px-4">
+            Explorar destinos
+          </Link>
+          {!autenticado && (
+            <Link to="/login" className="btn btn-light border rounded-pill px-4">
+              Crear cuenta
+            </Link>
+          )}
+        </div>
+      </div>
+    )
   }
 
   const { eyebrow, titulo, descripcion } = TITULOS_PASO[paso]
@@ -77,16 +175,39 @@ function Planificar() {
         <h1 className="h3 ts-heading mb-2">{titulo}</h1>
         <p className="text-muted mb-4">{descripcion}</p>
 
-        {paso === 1 && (
-          <PasoTipoViajero
-            seleccionados={formulario.tiposViajero}
-            onAlternar={alternarTipoViajero}
-          />
-        )}
+        {paso === 1 &&
+          (cargandoCategorias ? (
+            <div className="text-center text-muted py-4">
+              <span className="spinner-border spinner-border-sm me-2"></span>
+              Cargando categorías...
+            </div>
+          ) : errorCategorias ? (
+            <div className="alert alert-danger d-flex justify-content-between align-items-center">
+              <span>
+                <i className="bi bi-exclamation-circle me-1"></i> {errorCategorias}
+              </span>
+              <button type="button" className="btn btn-sm btn-outline-danger" onClick={cargarCategorias}>
+                Reintentar
+              </button>
+            </div>
+          ) : (
+            <PasoTipoViajero
+              opciones={categorias}
+              seleccionados={formulario.tiposViajero}
+              onAlternar={alternarTipoViajero}
+            />
+          ))}
 
         {paso === 2 && <PasoTuViaje formulario={formulario} onCambiar={actualizarCampo} />}
 
         {paso === 3 && <PasoContexto formulario={formulario} onCambiar={actualizarCampo} />}
+
+        {errorEnvio && (
+          <div className="alert alert-danger small mt-3 mb-0" role="alert">
+            <i className="bi bi-exclamation-circle me-1"></i>
+            {errorEnvio}
+          </div>
+        )}
 
         <div className="d-flex justify-content-between align-items-center mt-4">
           <button
@@ -112,12 +233,12 @@ function Planificar() {
               type="button"
               className="btn btn-ts-primary rounded-pill px-4"
               onClick={generarItinerario}
-              disabled={generando}
+              disabled={enviando || !puedeEnviar}
             >
-              {generando ? (
+              {enviando ? (
                 <>
                   <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                  Generando...
+                  Guardando...
                 </>
               ) : (
                 <>
@@ -132,6 +253,12 @@ function Planificar() {
           <p className="text-danger small mt-3 mb-0">
             <i className="bi bi-exclamation-circle me-1"></i>
             Elige al menos un tipo de viajero para continuar.
+          </p>
+        )}
+        {paso === 3 && !puedeEnviar && (
+          <p className="text-danger small mt-3 mb-0">
+            <i className="bi bi-exclamation-circle me-1"></i>
+            Marca la casilla de consentimiento para poder continuar.
           </p>
         )}
       </div>
