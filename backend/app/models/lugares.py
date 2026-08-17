@@ -15,6 +15,7 @@ Leaflet y Google Maps).
 from datetime import datetime
 
 from geoalchemy2 import Geography
+from geoalchemy2.shape import to_shape
 from sqlalchemy import ARRAY, Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -53,3 +54,15 @@ class Lugar(Base):
     )
 
     categoria: Mapped["Categoria"] = relationship(back_populates="lugares")
+
+    # "lat"/"lon" no son columnas: se calculan al vuelo a partir de
+    # "ubicacion" con shapely, para que los esquemas de salida (Etapa 9)
+    # puedan devolver JSON plano {"lat": -12.04, "lon": -77.03} sin que el
+    # frontend tenga que entender el formato binario de PostGIS.
+    @property
+    def lat(self) -> float:
+        return to_shape(self.ubicacion).y
+
+    @property
+    def lon(self) -> float:
+        return to_shape(self.ubicacion).x

@@ -9,7 +9,7 @@ Se ejecuta con:  uvicorn app.main:app --reload   (desde la carpeta backend/)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, categorias, encuestas, preferencias, salud, usuarios
+from app.api import auth, categorias, encuestas, lugares, preferencias, recomendaciones, salud, usuarios
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -34,3 +34,5 @@ app.include_router(usuarios.router)
 app.include_router(categorias.router)
 app.include_router(preferencias.router)
 app.include_router(encuestas.router)
+app.include_router(lugares.router)
+app.include_router(recomendaciones.router)
