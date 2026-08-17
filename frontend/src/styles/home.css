@@ -1,0 +1,226 @@
+/* Estilos exclusivos de la Home. Los tokens de color (--ts-primary, etc.)
+   vienen de global.css; aquí solo se arma el layout de cada sección. */
+
+/* ---- Hero ---- */
+.ts-hero {
+  position: relative;
+  min-height: 560px;
+  display: flex;
+  align-items: center;
+  background-size: cover;
+  background-position: center;
+  color: #fff;
+}
+
+.ts-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 15, 20, 0.55), rgba(15, 15, 20, 0.7));
+}
+
+.ts-hero-inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.ts-hero-badge {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ts-hero-title {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.ts-hero-search {
+  max-width: 640px;
+  margin: 2rem auto 0;
+}
+
+.ts-hero-search .form-control {
+  border-radius: 999px 0 0 999px;
+  padding: 0.75rem 1.25rem;
+  border: none;
+}
+
+.ts-hero-search .btn {
+  border-radius: 0 999px 999px 0;
+  padding: 0.75rem 1.5rem;
+}
+
+/* ---- Barra de estadísticas ---- */
+.ts-stats-bar {
+  background: #fff;
+}
+
+.ts-stat-number {
+  font-family: 'Playfair Display', Georgia, serif;
+  color: var(--ts-primary);
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+/* ---- Píldoras de categoría ---- */
+.ts-pill {
+  border: 1px solid var(--ts-border);
+  background: #fff;
+  color: var(--ts-text);
+  padding: 0.4rem 1.1rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.ts-pill--active {
+  background: var(--ts-primary);
+  border-color: var(--ts-primary);
+  color: #fff;
+}
+
+/* ---- Tarjetas de destino ---- */
+.ts-card {
+  background: #fff;
+  border: 1px solid var(--ts-border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.ts-card:hover {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.ts-card-img-wrap {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background-color: var(--ts-border);
+}
+
+.ts-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ts-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+}
+
+.ts-badge--cultural {
+  background: #fbe7e6;
+  color: #c1443c;
+}
+
+.ts-badge--natural {
+  background: #e6f4ea;
+  color: #2e7d32;
+}
+
+.ts-badge--gastronomico {
+  background: #fdf0e2;
+  color: #d9822b;
+}
+
+.ts-badge--aventura {
+  background: #e8eefc;
+  color: #3355cc;
+}
+
+.ts-badge--arqueologico {
+  background: #f1e6fb;
+  color: #7b3fb8;
+}
+
+.ts-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.ts-link-arrow {
+  color: var(--ts-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.ts-link-arrow:hover {
+  text-decoration: underline;
+}
+
+/* ---- "Por qué TuriSmart" (sección oscura) ---- */
+.ts-section-dark {
+  background: var(--ts-dark);
+  color: #cfcfcf;
+}
+
+.ts-feature-card {
+  background: #1f2026;
+  border-radius: 14px;
+  padding: 1.75rem;
+  height: 100%;
+}
+
+.ts-feature-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+}
+
+.ts-feature-icon--orange {
+  background: rgba(217, 130, 43, 0.15);
+  color: var(--ts-accent);
+}
+
+.ts-feature-icon--blue {
+  background: rgba(51, 85, 204, 0.15);
+  color: #3355cc;
+}
+
+.ts-feature-icon--green {
+  background: rgba(46, 125, 50, 0.15);
+  color: #2e7d32;
+}
+
+/* ---- CTA final ---- */
+.ts-section-cta {
+  background: #fbe9e6;
+}
+
+.ts-cta-badge {
+  background: #fff;
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
