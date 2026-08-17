@@ -1,0 +1,36 @@
+import { Routes, Route } from 'react-router-dom'
+import Navbar from './components/Navbar.jsx'
+import Footer from './components/Footer.jsx'
+import Home from './pages/Home.jsx'
+import Explorar from './pages/Explorar.jsx'
+import MapaGIS from './pages/MapaGIS.jsx'
+import MiItinerario from './pages/MiItinerario.jsx'
+import Dashboard from './pages/Dashboard.jsx'
+import Planificar from './pages/Planificar.jsx'
+import Login from './pages/Login.jsx'
+import PageNotFound from './pages/PageNotFound.jsx'
+
+function App() {
+  return (
+    <div className="d-flex flex-column min-vh-100">
+      <Navbar />
+
+      <main className="flex-grow-1">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/explorar" element={<Explorar />} />
+          <Route path="/mapa" element={<MapaGIS />} />
+          <Route path="/itinerario" element={<MiItinerario />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/planificar" element={<Planificar />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="*" element={<PageNotFound />} />
+        </Routes>
+      </main>
+
+      <Footer />
+    </div>
+  )
+}
+
+export default App
