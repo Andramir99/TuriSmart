@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import DestinoCard from '../components/DestinoCard.jsx'
 import CategoryPills from '../components/CategoryPills.jsx'
-import destinosMock from '../data/destinosMock.js'
+import { useLugares } from '../hooks/useLugares.js'
 import { CATEGORIAS } from '../utils/categorias.js'
 
 function Explorar() {
@@ -12,6 +12,7 @@ function Explorar() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [categoriaActiva, setCategoriaActiva] = useState('todos')
   const [busqueda, setBusqueda] = useState(searchParams.get('q') || '')
+  const { lugares, cargando, error, recargar } = useLugares()
 
   useEffect(() => {
     const query = searchParams.get('q')
@@ -20,15 +21,15 @@ function Explorar() {
 
   const destinosFiltrados = useMemo(() => {
     const texto = busqueda.trim().toLowerCase()
-    return destinosMock.filter((destino) => {
-      const coincideCategoria = categoriaActiva === 'todos' || destino.categoria === categoriaActiva
+    return lugares.filter((destino) => {
+      const coincideCategoria = categoriaActiva === 'todos' || destino.categoria.slug === categoriaActiva
       const coincideTexto =
         !texto ||
         destino.nombre.toLowerCase().includes(texto) ||
         destino.distrito.toLowerCase().includes(texto)
       return coincideCategoria && coincideTexto
     })
-  }, [categoriaActiva, busqueda])
+  }, [lugares, categoriaActiva, busqueda])
 
   function manejarSubmit(evento) {
     evento.preventDefault()
@@ -64,23 +65,41 @@ function Explorar() {
         />
       </div>
 
-      <p className="text-muted small mb-3">
-        {destinosFiltrados.length} destino{destinosFiltrados.length === 1 ? '' : 's'} encontrado
-        {destinosFiltrados.length === 1 ? '' : 's'}
-      </p>
-
-      {destinosFiltrados.length === 0 ? (
-        <div className="alert alert-light border">
-          No encontramos destinos con ese filtro. Prueba con otra búsqueda o categoría.
+      {cargando ? (
+        <div className="text-center text-muted py-5">
+          <span className="spinner-border spinner-border-sm me-2"></span>
+          Cargando destinos...
+        </div>
+      ) : error ? (
+        <div className="alert alert-danger d-flex justify-content-between align-items-center">
+          <span>
+            <i className="bi bi-exclamation-circle me-1"></i> {error}
+          </span>
+          <button type="button" className="btn btn-sm btn-outline-danger" onClick={recargar}>
+            Reintentar
+          </button>
         </div>
       ) : (
-        <div className="row g-4">
-          {destinosFiltrados.map((destino) => (
-            <div className="col-6 col-lg-3" key={destino.id}>
-              <DestinoCard destino={destino} />
+        <>
+          <p className="text-muted small mb-3">
+            {destinosFiltrados.length} destino{destinosFiltrados.length === 1 ? '' : 's'} encontrado
+            {destinosFiltrados.length === 1 ? '' : 's'}
+          </p>
+
+          {destinosFiltrados.length === 0 ? (
+            <div className="alert alert-light border">
+              No encontramos destinos con ese filtro. Prueba con otra búsqueda o categoría.
             </div>
-          ))}
-        </div>
+          ) : (
+            <div className="row g-4">
+              {destinosFiltrados.map((destino) => (
+                <div className="col-6 col-lg-3" key={destino.id}>
+                  <DestinoCard destino={destino} />
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   )

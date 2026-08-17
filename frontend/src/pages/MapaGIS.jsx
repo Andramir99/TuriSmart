@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import DestinoListItem from '../components/DestinoListItem.jsx'
 import CategoryPills from '../components/CategoryPills.jsx'
-import destinosMock from '../data/destinosMock.js'
-import { CATEGORIAS, colorCategoria, etiquetaCategoria } from '../utils/categorias.js'
+import { useLugares } from '../hooks/useLugares.js'
+import { CATEGORIAS, colorCategoria } from '../utils/categorias.js'
 import { proyectarPosicion, ETIQUETAS_DISTRITOS_MOCK } from '../utils/mapaMock.js'
 import '../styles/mapa.css'
 
@@ -19,15 +19,16 @@ function MapaGIS() {
   const [categoriaActiva, setCategoriaActiva] = useState('todos')
   const [busqueda, setBusqueda] = useState('')
   const [seleccionadoId, setSeleccionadoId] = useState(null)
+  const { lugares, cargando, error, recargar } = useLugares()
 
   const destinosFiltrados = useMemo(() => {
     const texto = busqueda.trim().toLowerCase()
-    return destinosMock.filter((destino) => {
-      const coincideCategoria = categoriaActiva === 'todos' || destino.categoria === categoriaActiva
+    return lugares.filter((destino) => {
+      const coincideCategoria = categoriaActiva === 'todos' || destino.categoria.slug === categoriaActiva
       const coincideTexto = !texto || destino.nombre.toLowerCase().includes(texto)
       return coincideCategoria && coincideTexto
     })
-  }, [categoriaActiva, busqueda])
+  }, [lugares, categoriaActiva, busqueda])
 
   function cambiarCategoria(slug) {
     setCategoriaActiva(slug)
@@ -73,18 +74,36 @@ function MapaGIS() {
         </div>
 
         <div className="ts-mapa-lista px-3">
-          {destinosFiltrados.map((destino) => (
-            <DestinoListItem
-              key={destino.id}
-              destino={destino}
-              activo={destino.id === seleccionadoId}
-              onSeleccionar={alternarSeleccion}
-            />
-          ))}
-          {destinosFiltrados.length === 0 && (
+          {cargando ? (
             <p className="text-muted small py-4 text-center">
-              Sin resultados para este filtro.
+              <span className="spinner-border spinner-border-sm me-2"></span>
+              Cargando destinos...
             </p>
+          ) : error ? (
+            <div className="text-center py-4">
+              <p className="text-danger small mb-2">
+                <i className="bi bi-exclamation-circle me-1"></i> {error}
+              </p>
+              <button type="button" className="btn btn-sm btn-outline-danger" onClick={recargar}>
+                Reintentar
+              </button>
+            </div>
+          ) : (
+            <>
+              {destinosFiltrados.map((destino) => (
+                <DestinoListItem
+                  key={destino.id}
+                  destino={destino}
+                  activo={destino.id === seleccionadoId}
+                  onSeleccionar={alternarSeleccion}
+                />
+              ))}
+              {destinosFiltrados.length === 0 && (
+                <p className="text-muted small py-4 text-center">
+                  Sin resultados para este filtro.
+                </p>
+              )}
+            </>
           )}
         </div>
       </aside>
@@ -134,14 +153,14 @@ function MapaGIS() {
                 <div className="ts-marker-popup">
                   <p className="fw-semibold mb-1">{destino.nombre}</p>
                   <p className="mb-0 text-muted">
-                    <i className="bi bi-star-fill text-warning"></i> {destino.rating.toFixed(1)}{' '}
-                    · {etiquetaCategoria(destino.categoria)}
+                    <i className="bi bi-star-fill text-warning"></i>{' '}
+                    {destino.valoracion_promedio.toFixed(1)} · {destino.categoria.nombre}
                   </p>
                 </div>
               )}
               <span
                 className="ts-marker-dot"
-                style={{ backgroundColor: colorCategoria(destino.categoria) }}
+                style={{ backgroundColor: colorCategoria(destino.categoria.slug) }}
               ></span>
             </div>
           )

@@ -4,10 +4,12 @@ import WizardSteps from '../components/WizardSteps.jsx'
 import PasoTipoViajero from '../components/PasoTipoViajero.jsx'
 import PasoTuViaje from '../components/PasoTuViaje.jsx'
 import PasoContexto from '../components/PasoContexto.jsx'
+import RecomendacionCard from '../components/RecomendacionCard.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { obtenerCategorias } from '../services/categoriasService.js'
 import { enviarEncuesta } from '../services/encuestasService.js'
 import { guardarPreferencias } from '../services/preferenciasService.js'
+import { generarRecomendaciones } from '../services/recomendacionesService.js'
 import { ApiError } from '../services/api.js'
 import '../styles/wizard.css'
 
@@ -38,6 +40,8 @@ function Planificar() {
   const [enviando, setEnviando] = useState(false)
   const [errorEnvio, setErrorEnvio] = useState('')
   const [completado, setCompletado] = useState(false)
+  const [recomendaciones, setRecomendaciones] = useState([])
+  const [errorRecomendaciones, setErrorRecomendaciones] = useState('')
 
   const [categorias, setCategorias] = useState([])
   const [cargandoCategorias, setCargandoCategorias] = useState(true)
@@ -128,6 +132,26 @@ function Planificar() {
       }
 
       setCompletado(true)
+
+      // Las recomendaciones se piden aparte y con su propio manejo de
+      // error: si fallan, la encuesta ya quedó guardada de todas formas,
+      // así que no tiene sentido bloquear la pantalla de éxito por esto.
+      try {
+        const resultado = await generarRecomendaciones(
+          {
+            categorias: formulario.tiposViajero,
+            presupuesto: formulario.presupuesto,
+            distrito_partida: formulario.distritoPartida || null,
+            distancia_maxima_km: formulario.distanciaMaximaKm,
+          },
+          token,
+        )
+        setRecomendaciones(resultado)
+      } catch (err) {
+        setErrorRecomendaciones(
+          err instanceof ApiError ? err.message : 'No se pudieron calcular las recomendaciones.',
+        )
+      }
     } catch (err) {
       setErrorEnvio(
         err instanceof ApiError ? err.message : 'No se pudo guardar la encuesta. Intenta de nuevo.',
@@ -139,20 +163,40 @@ function Planificar() {
 
   if (completado) {
     return (
-      <div className="container py-5 text-center" style={{ maxWidth: '560px' }}>
+      <div className="container py-5 text-center">
         <p className="ts-eyebrow mb-2">¡Listo!</p>
         <h1 className="ts-heading mb-3">
           <i className="bi bi-check-circle-fill text-success me-2"></i>
           Encuesta registrada
         </h1>
-        <p className="text-muted mb-4">
-          Guardamos tus preferencias{autenticado ? ' en tu cuenta' : ' de forma anónima'}. El
-          recomendador que arma itinerarios a partir de estas respuestas se conecta en la
-          Etapa 9 — por ahora puedes seguir explorando el catálogo.
+        <p className="text-muted mb-4 mx-auto" style={{ maxWidth: '560px' }}>
+          Guardamos tus preferencias{autenticado ? ' en tu cuenta' : ' de forma anónima'}. Estas
+          son las 5 mejores coincidencias según el recomendador inicial de TuriSmart (basado en
+          reglas de contenido, no todavía en Machine Learning entrenado).
         </p>
+
+        {errorRecomendaciones ? (
+          <div className="alert alert-danger d-inline-block mb-4">
+            <i className="bi bi-exclamation-circle me-1"></i> {errorRecomendaciones}
+          </div>
+        ) : recomendaciones.length === 0 ? (
+          <div className="text-muted mb-4">
+            <span className="spinner-border spinner-border-sm me-2"></span>
+            Calculando recomendaciones...
+          </div>
+        ) : (
+          <div className="row g-4 text-start mb-4">
+            {recomendaciones.map((recomendacion) => (
+              <div className="col-6 col-lg-3" key={recomendacion.lugar.id}>
+                <RecomendacionCard recomendacion={recomendacion} />
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="d-flex justify-content-center gap-3 flex-wrap">
           <Link to="/explorar" className="btn btn-ts-primary rounded-pill px-4">
-            Explorar destinos
+            Explorar más destinos
           </Link>
           {!autenticado && (
             <Link to="/login" className="btn btn-light border rounded-pill px-4">

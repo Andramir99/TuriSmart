@@ -2,21 +2,26 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import DestinoCard from '../components/DestinoCard.jsx'
 import CategoryPills from '../components/CategoryPills.jsx'
-import destinosMock from '../data/destinosMock.js'
+import { useLugares } from '../hooks/useLugares.js'
 import { CATEGORIAS } from '../utils/categorias.js'
 import '../styles/home.css'
 
 const HERO_IMAGE = 'https://picsum.photos/seed/lima-malecon-hero/1600/900'
+const MAX_DESTACADOS = 8
 
 function Home() {
   const navigate = useNavigate()
   const [categoriaActiva, setCategoriaActiva] = useState('todos')
   const [busqueda, setBusqueda] = useState('')
+  const { lugares, cargando, error, recargar } = useLugares()
 
   const destinosFiltrados = useMemo(() => {
-    if (categoriaActiva === 'todos') return destinosMock
-    return destinosMock.filter((destino) => destino.categoria === categoriaActiva)
-  }, [categoriaActiva])
+    const filtrados =
+      categoriaActiva === 'todos'
+        ? lugares
+        : lugares.filter((destino) => destino.categoria.slug === categoriaActiva)
+    return filtrados.slice(0, MAX_DESTACADOS)
+  }, [lugares, categoriaActiva])
 
   function manejarBusqueda(evento) {
     evento.preventDefault()
@@ -114,13 +119,29 @@ function Home() {
             />
           </div>
 
-          <div className="row g-4">
-            {destinosFiltrados.map((destino) => (
-              <div className="col-6 col-lg-3" key={destino.id}>
-                <DestinoCard destino={destino} />
-              </div>
-            ))}
-          </div>
+          {cargando ? (
+            <div className="text-center text-muted py-5">
+              <span className="spinner-border spinner-border-sm me-2"></span>
+              Cargando destinos...
+            </div>
+          ) : error ? (
+            <div className="alert alert-danger d-flex justify-content-between align-items-center">
+              <span>
+                <i className="bi bi-exclamation-circle me-1"></i> {error}
+              </span>
+              <button type="button" className="btn btn-sm btn-outline-danger" onClick={recargar}>
+                Reintentar
+              </button>
+            </div>
+          ) : (
+            <div className="row g-4">
+              {destinosFiltrados.map((destino) => (
+                <div className="col-6 col-lg-3" key={destino.id}>
+                  <DestinoCard destino={destino} />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
