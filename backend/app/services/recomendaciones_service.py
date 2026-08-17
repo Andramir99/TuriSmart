@@ -77,19 +77,17 @@ def _puntuar_lugar(
 
     distancia_km = None
     puntaje_distancia = 0.5  # neutral si no sabemos de dónde parte
-    dentro_de_distancia = True
+    limite = distancia_maxima_km or 15.0
+    dentro_del_limite_declarado = True
 
     coordenadas_origen = DISTRITOS_COORDS.get(distrito_partida) if distrito_partida else None
     if coordenadas_origen:
         distancia_km = calcular_distancia_km(*coordenadas_origen, lugar.lat, lugar.lon)
-        limite = distancia_maxima_km or 15.0
         if distancia_km <= limite:
             puntaje_distancia = 1.0 - (distancia_km / limite) * 0.5  # entre 0.5 y 1.0
         else:
             puntaje_distancia = max(0.0, 0.5 - (distancia_km - limite) / limite)
-            # margen de tolerancia: no lo descartamos de plano por pasarse
-            # un poco, solo penalizamos su puntaje.
-            dentro_de_distancia = distancia_km <= limite * 1.5
+            dentro_del_limite_declarado = False
 
     puntaje_total = (
         PESO_CATEGORIA * puntaje_categoria
@@ -103,7 +101,7 @@ def _puntuar_lugar(
         "coincide_categoria": coincide_categoria,
         "coincide_presupuesto": coincide_presupuesto,
         "distancia_km": distancia_km,
-        "dentro_de_distancia": dentro_de_distancia,
+        "dentro_del_limite_declarado": dentro_del_limite_declarado,
     }
 
 
@@ -113,7 +111,10 @@ def _construir_motivo(lugar: Lugar, presupuesto: str, distrito_partida: str | No
         clausulas.append(f"coincide con tu interés en {lugar.categoria.nombre.lower()}")
     if info["coincide_presupuesto"]:
         clausulas.append(f"está dentro de tu presupuesto {presupuesto}")
-    if info["distancia_km"] is not None:
+    # Solo presumimos la distancia como un plus si de verdad está dentro
+    # de lo que la persona pidió — decir "está a 40 km de tu punto de
+    # partida" no sirve como argumento a favor de recomendarlo.
+    if info["distancia_km"] is not None and info["dentro_del_limite_declarado"]:
         clausulas.append(f"se encuentra a {info['distancia_km']:.1f} km de {distrito_partida}")
 
     if not clausulas:
@@ -153,13 +154,19 @@ def generar_recomendaciones(
     lugares = db.query(Lugar).options(joinedload(Lugar.categoria)).filter(Lugar.activo.is_(True)).all()
     categorias_preferidas = set(datos.categorias)
 
+    # A propósito NO se descarta ningún lugar por estar lejos: con un
+    # catálogo chico (24 lugares concentrados en el centro/sur de Lima),
+    # excluir candidatos por distancia podía dejar 0-2 resultados para
+    # distritos alejados (ej. Comas, San Juan de Lurigancho) — y entonces
+    # un itinerario de "3 días" terminaba con apenas 2 lugares, porque
+    # sencillamente no había suficientes candidatos para repartir. La
+    # distancia influye en el PUNTAJE (más lejos, puntúa más bajo), pero
+    # siempre se devuelven las 5 mejores opciones disponibles.
     candidatos = []
     for lugar in lugares:
         info = _puntuar_lugar(
             lugar, categorias_preferidas, datos.presupuesto, datos.distrito_partida, datos.distancia_maxima_km
         )
-        if not info["dentro_de_distancia"]:
-            continue
         motivo = _construir_motivo(lugar, datos.presupuesto, datos.distrito_partida, info)
         candidatos.append({"lugar": lugar, "puntuacion": info["puntaje_total"], "motivo": motivo})
 
