@@ -17,9 +17,11 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.models.categorias import Categoria
 from app.models.interacciones import Interaccion
 from app.models.itinerarios import DetalleItinerario, Itinerario
 from app.models.lugares import Lugar
+from app.models.solicitudes_arco import SolicitudArco
 from app.models.usuarios import Usuario
 from app.models.valoraciones import Valoracion
 
@@ -51,6 +53,18 @@ def _nombre_mostrable(nombre_completo: str) -> str:
 
 def _con_tz(fecha: datetime) -> datetime:
     return fecha if fecha.tzinfo is not None else fecha.replace(tzinfo=timezone.utc)
+
+
+def _contar_por_semana(fechas: list[datetime], inicio: datetime, semanas: int) -> list[int]:
+    """Agrupa una lista de fechas en "semanas desde inicio" (semana 0, 1,
+    2...), usada tanto por la tendencia de consultas/itinerarios como por
+    la de usuarios nuevos del panel de administración.
+    """
+    conteo = [0] * semanas
+    for fecha in fechas:
+        dias = (_con_tz(fecha) - inicio).days
+        conteo[max(0, min(semanas - 1, dias // 7))] += 1
+    return conteo
 
 
 def obtener_estadisticas_generales(db: Session) -> dict:
@@ -106,22 +120,10 @@ def obtener_tendencia_semanal(db: Session, semanas: int = SEMANAS_TENDENCIA) -> 
         .all()
     )
 
-    def _semana_de(fecha: datetime) -> int:
-        dias = (_con_tz(fecha) - inicio).days
-        return max(0, min(semanas - 1, dias // 7))
-
-    consultas_por_semana = [0] * semanas
-    for (fecha,) in fechas_interacciones:
-        consultas_por_semana[_semana_de(fecha)] += 1
-
-    itinerarios_por_semana = [0] * semanas
-    for (fecha,) in fechas_itinerarios:
-        itinerarios_por_semana[_semana_de(fecha)] += 1
-
     return {
         "etiquetas": [f"Sem {i + 1}" for i in range(semanas)],
-        "consultas": consultas_por_semana,
-        "itinerarios": itinerarios_por_semana,
+        "consultas": _contar_por_semana([f for (f,) in fechas_interacciones], inicio, semanas),
+        "itinerarios": _contar_por_semana([f for (f,) in fechas_itinerarios], inicio, semanas),
     }
 
 
@@ -188,3 +190,82 @@ def obtener_itinerarios_recientes(db: Session, limite: int = 5) -> list[dict]:
             }
         )
     return resultados
+
+
+# --- Panel general del administrador --------------------------------
+
+
+def obtener_metricas_panel_admin(db: Session) -> dict:
+    total_usuarios = db.query(Usuario).filter(Usuario.es_sintetico.is_(False)).count()
+    total_lugares_activos = db.query(Lugar).filter(Lugar.activo.is_(True)).count()
+    total_lugares_inactivos = db.query(Lugar).filter(Lugar.activo.is_(False)).count()
+    total_itinerarios = db.query(Itinerario).join(Usuario).filter(Usuario.es_sintetico.is_(False)).count()
+
+    valoracion_promedio_general = (
+        db.query(func.avg(Valoracion.puntuacion)).filter(Valoracion.es_sintetico.is_(False)).scalar()
+    )
+
+    solicitudes_arco_pendientes = db.query(SolicitudArco).filter(SolicitudArco.atendida.is_(False)).count()
+
+    return {
+        "total_usuarios": total_usuarios,
+        "total_lugares_activos": total_lugares_activos,
+        "total_lugares_inactivos": total_lugares_inactivos,
+        "total_itinerarios": total_itinerarios,
+        "valoracion_promedio_general": (
+            round(float(valoracion_promedio_general), 2) if valoracion_promedio_general is not None else None
+        ),
+        "solicitudes_arco_pendientes": solicitudes_arco_pendientes,
+    }
+
+
+def obtener_tendencia_semanal_administracion(db: Session, semanas: int = SEMANAS_TENDENCIA) -> dict:
+    """Crecimiento de la plataforma semana a semana: cuentas reales nuevas
+    e itinerarios reales nuevos — distinto de obtener_tendencia_semanal
+    (esa mide "consultas", pensada para el Dashboard de agencias).
+    """
+    inicio = datetime.now(timezone.utc) - timedelta(weeks=semanas)
+
+    fechas_usuarios = (
+        db.query(Usuario.fecha_registro)
+        .filter(Usuario.fecha_registro >= inicio, Usuario.es_sintetico.is_(False))
+        .all()
+    )
+    fechas_itinerarios = (
+        db.query(Itinerario.fecha_creacion)
+        .join(Usuario)
+        .filter(Itinerario.fecha_creacion >= inicio, Usuario.es_sintetico.is_(False))
+        .all()
+    )
+
+    return {
+        "etiquetas": [f"Sem {i + 1}" for i in range(semanas)],
+        "usuarios_nuevos": _contar_por_semana([f for (f,) in fechas_usuarios], inicio, semanas),
+        "itinerarios_nuevos": _contar_por_semana([f for (f,) in fechas_itinerarios], inicio, semanas),
+    }
+
+
+def obtener_lugares_por_categoria(db: Session) -> list[dict]:
+    filas = (
+        db.query(Categoria.nombre, func.count(Lugar.id))
+        .join(Lugar, Lugar.categoria_id == Categoria.id)
+        .filter(Lugar.activo.is_(True))
+        .group_by(Categoria.id)
+        .order_by(func.count(Lugar.id).desc())
+        .all()
+    )
+    return [{"categoria": nombre, "cantidad": cantidad} for nombre, cantidad in filas]
+
+
+def obtener_lugares_mejor_valorados(db: Session, limite: int = 5) -> list[dict]:
+    filas = (
+        db.query(Lugar.nombre, Lugar.valoracion_promedio, Lugar.total_valoraciones)
+        .filter(Lugar.activo.is_(True), Lugar.total_valoraciones > 0)
+        .order_by(Lugar.valoracion_promedio.desc(), Lugar.total_valoraciones.desc())
+        .limit(limite)
+        .all()
+    )
+    return [
+        {"nombre": nombre, "valoracion_promedio": float(promedio), "total_valoraciones": total}
+        for nombre, promedio, total in filas
+    ]

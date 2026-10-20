@@ -50,7 +50,7 @@ function Navbar() {
             {esAdmin ? (
               <>
                 <li className="nav-item">
-                  <NavLink to="/admin/lugares" end className={navLinkClass}>
+                  <NavLink to="/admin" className={navLinkClass}>
                     <i className="bi bi-speedometer2"></i> Panel administrativo
                   </NavLink>
                 </li>

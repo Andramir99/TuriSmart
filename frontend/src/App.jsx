@@ -13,6 +13,7 @@ import Dashboard from './pages/Dashboard.jsx'
 import Planificar from './pages/Planificar.jsx'
 import Login from './pages/Login.jsx'
 import Privacidad from './pages/Privacidad.jsx'
+import AdminPanel from './pages/AdminPanel.jsx'
 import AdminLugares from './pages/AdminLugares.jsx'
 import PageNotFound from './pages/PageNotFound.jsx'
 
@@ -53,6 +54,14 @@ function App() {
           />
           <Route path="/planificar" element={<Planificar />} />
           <Route path="/login" element={<Login />} />
+          <Route
+            path="/admin"
+            element={
+              <RutaAdmin>
+                <AdminPanel />
+              </RutaAdmin>
+            }
+          />
           <Route
             path="/admin/lugares"
             element={
