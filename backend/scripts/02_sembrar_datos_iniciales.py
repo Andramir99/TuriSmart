@@ -1355,6 +1355,107 @@ LUGARES: list[dict] = [
 # placeholder determinista (picsum.photos) — mejor eso que arriesgar una
 # imagen que no corresponda al lugar real.
 IMAGENES_REALES = {
+    # --- lote iPerú 2026, grupo 4: Pueblo Libre, Surco, San Borja, San Miguel, Jesús María, Chorrillos, Lurín, Ate, Surquillo (investigado por subagente) ---
+    "Plaza Bolívar de Pueblo Libre": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Plaza_Bolivar._Pueblo_Libre%2C_Lima%2C_Per%C3%BA_02.jpg",
+    "Iglesia Santa María Magdalena": "https://upload.wikimedia.org/wikipedia/commons/0/01/MariaMagdalena0001.jpg",
+    "Quinta de los Libertadores - Sala Independencia": "https://upload.wikimedia.org/wikipedia/commons/f/fe/Colonial_House%2C_Lima_Peru_%28cropped%29.jpg",
+    "Parque Voces por el Clima": "https://upload.wikimedia.org/wikipedia/commons/6/66/Voces_por_el_clima.jpg",
+    "Plaza Mayor de Santiago de Surco": "https://upload.wikimedia.org/wikipedia/commons/c/c0/Iglesia_de_Santiago_de_Surco-_Plaza_de_Armas.jpg",
+    "Ministerio de Cultura y salas de exposición (ex Museo de la Nación)": "https://upload.wikimedia.org/wikipedia/commons/3/3f/Museo_de_la_Nacion_entrance.JPG",
+    "Biblioteca Nacional del Perú": "https://upload.wikimedia.org/wikipedia/commons/9/9f/Biblioteca_nacional_del_Peru_cropped.jpg",
+    "Huaca San Borja": "https://upload.wikimedia.org/wikipedia/commons/f/f2/Huaca_San_Borja_Archaeological_site_-_overview.jpg",
+    "Museo de Historia Natural UNMSM": "https://upload.wikimedia.org/wikipedia/commons/6/64/UNMSM_museo_historianatural.jpg",
+    "Jardín Botánico de Plantas Medicinales y Alimenticias": "https://upload.wikimedia.org/wikipedia/commons/f/fc/Vista_general_del_Jard%C3%ADn_Bot%C3%A1nico.jpg",
+    "Centro Cultural Peruano Japonés": "https://upload.wikimedia.org/wikipedia/commons/c/c3/Centro_Cultural_Peruano_Japon%C3%A9s.jpg",
+    "Salto del Fraile": "https://upload.wikimedia.org/wikipedia/commons/5/52/Salto_fraile.jpg",
+    "Morro Solar": "https://upload.wikimedia.org/wikipedia/commons/a/a7/Morro_Solar%2C_Chorrillos%2C_Lima%2C_Peru.jpg",
+    "Planetario Solar": "https://upload.wikimedia.org/wikipedia/commons/e/ea/Planetario_morro_solar.jpg",
+    "Cristo del Pacífico": "https://upload.wikimedia.org/wikipedia/commons/c/c4/Cristo_del_Pacifico_%28Lima%2C_Peru%29.jpg",
+    "Museo Contemporáneo Chavín de Huántar": "https://upload.wikimedia.org/wikipedia/commons/4/4d/R%C3%A9plica_residencia_embajador.jpg",
+    "Catedral de San Pedro de Lurín": "https://upload.wikimedia.org/wikipedia/commons/8/8d/Catedral_San_Pedro%2C_Lur%C3%ADn_01.jpg",
+    "MUNA - Museo Nacional del Perú": "https://upload.wikimedia.org/wikipedia/commons/5/58/Entrada_principal_del_MUNA.jpg",
+    "Parque de las Leyendas de Huachipa": "https://upload.wikimedia.org/wikipedia/commons/c/cd/Parque_Zool%C3%B3gico_de_Huachipa%2C_hoy_Parque_de_las_Leyendas_Huachipa%2C_a%C3%B1o_2026.jpg",
+    "Zona Arqueológica Huaycán de Pariachi": "https://upload.wikimedia.org/wikipedia/commons/7/76/Huayc%C3%A1n_de_Pariachi.jpg",
+    "Huaca La Merced": "https://upload.wikimedia.org/wikipedia/commons/4/48/Huaca_La_Merced_01.jpg",
+
+    # --- lote iPerú 2026, grupo 5: periferia (lomas/huacas) + Callao (investigado por subagente) ---
+    "Zona Arqueológica Huaycán de Cieneguilla": "https://upload.wikimedia.org/wikipedia/commons/9/91/C.a_Huaycan_de_Cieneguilla.jpg",
+    "Lomas de Amancaes - Sector El Mirador": "https://upload.wikimedia.org/wikipedia/commons/9/91/Lomas_de_Amancaes.jpg",
+    "Lomas de Mangomarca": "https://upload.wikimedia.org/wikipedia/commons/1/17/Lomas_de_Mangomarca_en_San_Juan_de_Lurigancho_01.jpg",
+    "Lomas El Paraíso": "https://upload.wikimedia.org/wikipedia/commons/a/af/Lomas_del_Para%C3%ADso_02.jpg",
+    "Museo de Sitio de Ancón": "https://upload.wikimedia.org/wikipedia/commons/6/63/Frontis_del_Museo_de_Anc%C3%B3n.jpg",
+    "Lomas de Carabayllo II": "https://upload.wikimedia.org/wikipedia/commons/4/48/Puesto_policial_de_Lomas_de_Carabayllo.jpg",
+    "Huaca Garagay": "https://upload.wikimedia.org/wikipedia/commons/f/f1/Huaca_Garagay_1.jpg",
+    "Iglesia Matriz Catedral del Callao": "https://upload.wikimedia.org/wikipedia/commons/f/f2/Iglesia_Matriz_del_Callao.jpg",
+    "Plaza Matriz del Callao": "https://upload.wikimedia.org/wikipedia/commons/5/58/Plaza_Grau%2C_Callao%2C_Peru.jpg",
+    "Fortaleza del Real Felipe": "https://upload.wikimedia.org/wikipedia/commons/8/80/Fortaleza_del_Real_Felipe_01.jpg",
+    "Sala de Exhibición Casa Fugaz (Edificio Ronald)": "https://upload.wikimedia.org/wikipedia/commons/6/6b/Ambiente_monumental_3_-CAL002_-_16052017.jpg",
+    "Museo de Sitio Naval Submarino Abtao": "https://upload.wikimedia.org/wikipedia/commons/8/87/BAP_Abtao_-_Callao.jpg",
+    "Muelle Dársena": "https://upload.wikimedia.org/wikipedia/commons/b/bb/MUELLEDARSENADELCALLAOTRASNPORTERIM.jpg",
+    "Reserva Nacional Islas, Islotes y Puntas Guaneras - Islotes Palomino": "https://upload.wikimedia.org/wikipedia/commons/e/e8/RECORRIDO_ISLAS_CAVINZAS_E_ISLOTES_PALOMINO_-_54103557796.jpg",
+    "Bahía del Callao y La Punta": "https://upload.wikimedia.org/wikipedia/commons/b/b1/La_Punta%2C_Callao_%286988073052%29.jpg",
+    "Zona Monumental del Callao": "https://upload.wikimedia.org/wikipedia/commons/0/08/Callao_monumental.jpg",
+    "Barrio de Chucuito": "https://upload.wikimedia.org/wikipedia/commons/e/e2/Colorful_houses_in_Callao_%286988032914%29.jpg",
+    "Plaza Miguel Grau del Callao": "https://upload.wikimedia.org/wikipedia/commons/f/f8/Plaza_Grau_del_Callao.jpg",
+    "Plaza Independencia del Callao": "https://upload.wikimedia.org/wikipedia/commons/a/a1/Pileta_real_felipe.jpg",
+    "Palacio Inca de Oquendo": "https://upload.wikimedia.org/wikipedia/commons/7/7f/Oquendo_en_ventanilla.jpg",
+    "Sitio Arqueológico Huaca Culebra": "https://upload.wikimedia.org/wikipedia/commons/1/16/Huaca_Cerro_Culebras_01.jpg",
+    "Área de Conservación Regional Humedales de Ventanilla": "https://upload.wikimedia.org/wikipedia/commons/b/b4/%C3%81rea_de_conservaci%C3%B3n_regional_Humedales_de_Ventanilla.jpg",
+
+    # --- lote iPerú 2026, grupo 2: Cercado de Lima B + Rímac (investigado por subagente) ---
+    "Museo de Arqueología Josefina Ramos de Cox": "https://upload.wikimedia.org/wikipedia/commons/7/70/Museo_Josefina_Ramos_de_Cox_%28ex_Colegio_San_Andr%C3%A9s%29.jpg",
+    "Museo de Arte Italiano": "https://upload.wikimedia.org/wikipedia/commons/1/15/Museodearteitaliano.jpg",
+    "Museo Metropolitano de Lima": "https://upload.wikimedia.org/wikipedia/commons/d/d4/Museo_Metropolitano_de_Lima_-_Conmemoraci%C3%B3n_hist%C3%B3rica_de_la_Independencia_del_Per%C3%BA_%28cropped%29.png",
+    "Casa de la Cultura Criolla Rosa Mercedes Ayarza": "https://upload.wikimedia.org/wikipedia/commons/b/bc/Casa_de_la_cultura_Criolla-Fachada.jpg",
+    "Plaza Francia o de La Recoleta": "https://upload.wikimedia.org/wikipedia/commons/d/d7/Plazuela_de_la_Recoleta.jpg",
+    "Parque Universitario": "https://upload.wikimedia.org/wikipedia/commons/7/71/CCSM-UNMSM_Casona_de_San_Marcos_y_Parque_Univesitario.jpg",
+    "Paseo Colón": "https://upload.wikimedia.org/wikipedia/commons/7/71/PaseoColon_2017-10-22_001.jpg",
+    "Casa Museo José Carlos Mariátegui": "https://upload.wikimedia.org/wikipedia/commons/e/e7/Casa_Museo_Jos%C3%A9_Carlos_Mari%C3%A1tegui.jpg",
+    "Museo Electoral y de la Democracia - JNE": "https://upload.wikimedia.org/wikipedia/commons/4/42/Mesa_Directa_1904.jpg",
+    "Centro Cultural de Bellas Artes": "https://upload.wikimedia.org/wikipedia/commons/9/90/Escuela_Nacional_de_Bellas_Artes%2C_Lima.jpg",
+    "Museo Aeronáutico del Perú": "https://upload.wikimedia.org/wikipedia/commons/4/49/Castillo_Rospigliosi%2C_1929%2C_Santa_Beatriz_Lima_Peru.jpg",
+    "Bomberos Salvadora Lima 10": "https://upload.wikimedia.org/wikipedia/commons/0/08/Compa%C3%B1%C3%ADa_de_Bomberos_Salvadora_10_en_Jir%C3%B3n_de_la_Uni%C3%B3n.jpg",
+    "Palacio Municipal de Lima": "https://upload.wikimedia.org/wikipedia/commons/b/bf/Lima_City_Hall.jpg",
+    "Museo de los Descalzos": "https://upload.wikimedia.org/wikipedia/commons/c/c5/Convento_de_los_Descalzos_-_panoramio.jpg",
+    "Paseo de Aguas": "https://upload.wikimedia.org/wikipedia/commons/b/bb/Vista_tarde_-noche_del_Paseo_de_Aguas.jpg",
+    "Alameda de los Descalzos": "https://upload.wikimedia.org/wikipedia/commons/2/25/Alameda_de_los_Descalzos_Rimac.jpg",
+    "Museo de Artes y Ciencias Ing. Eduardo de Habich": "https://upload.wikimedia.org/wikipedia/commons/c/c5/UNI_Pabell%C3%B3n_Central_2017.jpg",
+
+    # --- lote iPerú 2026, grupo 3: Miraflores, Barranco, San Isidro (investigado por subagente) ---
+    "Museo Textil Precolombino Amano": "https://upload.wikimedia.org/wikipedia/commons/5/59/Visita_al_Museo_Amano%2C_textiles_del_antiguo_Per%C3%BA%2C_Miraflores%2C_Lima_01.jpg",
+    "Santuario Patriótico de Lima - Reducto de Miraflores N°2": "https://upload.wikimedia.org/wikipedia/commons/7/7b/174_Parque_Reducto_No.2%2C_Lima.jpg",
+    "Museo de Sitio Andrés Avelino Cáceres": "https://upload.wikimedia.org/wikipedia/commons/a/a0/Museo_Mariscal_Andr%C3%A9s_Avelino_C%C3%A1ceres%2C_Lima.jpg",
+    "Instituto Porras Barrenechea": "https://upload.wikimedia.org/wikipedia/commons/d/df/Casa_de_Rauul_Porras_Barrenechea.jpg",
+    "Lugar de la Memoria, la Tolerancia e Inclusión Social (LUM)": "https://upload.wikimedia.org/wikipedia/commons/b/ba/Fachada_del_museo_LUM_%28Lugar_de_la_Memoria%2C_la_Tolerancia_y_la_Inclusi%C3%B3n_Social%29.jpg",
+    "Centro Cultural Ricardo Palma": "https://upload.wikimedia.org/wikipedia/commons/c/c5/Cuarteto_aranjuez_en_el_centro_cultural_%22ricardo_palma%22_Lima_-_Peru.jpg",
+    "Palacio de las Artes de Miraflores (PLAM)": "https://upload.wikimedia.org/wikipedia/commons/4/4d/Palacio_Municipal_de_Miraflores_-_Lima.jpg",
+    "Parapente Miraflores": "https://upload.wikimedia.org/wikipedia/commons/5/59/Parapentes_Miraflores_Lima_PE.jpg",
+    "Museo de Arte Contemporáneo - Lima (MAC)": "https://upload.wikimedia.org/wikipedia/commons/c/ce/Museo_de_Arte_Contemporaneo_Barranco.jpg",
+    "Ermita de Barranco": "https://upload.wikimedia.org/wikipedia/commons/1/1d/Ermita_de_Barranco.JPG",
+    "Casa Taller Víctor Delfín": "https://upload.wikimedia.org/wikipedia/commons/7/72/Casa_de_Victor_Delf%C3%ADn%2C_Barranco.jpg",
+    "Parroquia Nuestra Señora del Pilar": "https://upload.wikimedia.org/wikipedia/commons/d/df/NtraSradelPilarSanIsidroLIM-PE.jpg",
+    "Casa Museo Marina Núñez del Prado": "https://upload.wikimedia.org/wikipedia/commons/9/91/Casa_Museo_Marina_Nu%C3%B1ez_del_Prado.jpg",
+
+    # --- lote iPerú 2026, grupo 1: Cercado de Lima A (investigado por subagente) ---
+    "Parque de la Muralla": "https://upload.wikimedia.org/wikipedia/commons/d/de/Parque_muralla.jpg",
+    "Museo Municipal Prehispánico": "https://upload.wikimedia.org/wikipedia/commons/4/44/Museo_Municipal_Prehisp%C3%A1nico_en_Lima_01.jpg",
+    "Museo de Sitio Bodega y Quadra": "https://upload.wikimedia.org/wikipedia/commons/3/38/Museo_de_sitio_-_Centro_de_lima.jpg",
+    "Casa de la Literatura Peruana": "https://upload.wikimedia.org/wikipedia/commons/2/2c/Estaci%C3%B3n_de_Desamparados_o_Casa_de_la_Literatura_Peruana.jpg",
+    "Casa Fernandini": "https://upload.wikimedia.org/wikipedia/commons/b/b2/2017_Lima_-_Jir%C3%B3n_Ica_441A%2C_Cercado_de_Lima%2C_Casa_Fernandini.jpg",
+    "Teatro Municipal y Museo Municipal del Teatro": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Teatro_Municipal_%28cultural_heritage_site_in_Peru%29.jpg",
+    "Teatro Principal Manuel A. Segura": "https://upload.wikimedia.org/wikipedia/commons/4/4d/T_MANUEL_SEGURA_%282%29.jpg",
+    "Museo Naval Casa Grau de Lima": "https://upload.wikimedia.org/wikipedia/commons/4/42/Museo_Naval_-_Casa_Grau.jpg",
+    "Casa O'Higgins": "https://upload.wikimedia.org/wikipedia/commons/f/f9/Casa_O%27Higgins.jpg",
+    "Iglesia y Convento de Nuestra Señora de La Merced": "https://upload.wikimedia.org/wikipedia/commons/7/70/Basilica_de_Nuestra_Se%C3%B1ora_de_la_Merced._Lima%2C_Per%C3%BA.jpg",
+    "Museo Central - MUCEN": "https://upload.wikimedia.org/wikipedia/commons/c/ca/Lima_-_Per%C3%BA_%2820708190632%29.jpg",
+    "Palacio de Torre Tagle": "https://upload.wikimedia.org/wikipedia/commons/8/8e/Palacio_de_Torre_Tagle_Lima%2C_Peru.jpg",
+    "Iglesia de San Pedro": "https://upload.wikimedia.org/wikipedia/commons/d/de/Iglesia_de_San_Pedro_LIma.jpg",
+    "Museo Nacional Afroperuano": "https://upload.wikimedia.org/wikipedia/commons/f/f4/Pati_interior_del_Museo_Nacional_Afroperuano.jpg",
+    "Santuario de Santa Rosa de Lima": "https://upload.wikimedia.org/wikipedia/commons/6/69/Santuario_Santa_Rosa_de_Lima.jpg",
+    "Iglesia Las Nazarenas y Santuario del Señor de los Milagros": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Nazarenas04_2019.jpg",
+    "Museo Nacional de la Cultura Peruana": "https://upload.wikimedia.org/wikipedia/commons/c/c3/Edifici_del_Museo_Nacional_de_la_Cultura_Peruana02.jpg",
+    "Plaza San Martín": "https://upload.wikimedia.org/wikipedia/commons/d/da/Plaza_San_Martin%2C_Lima_2013.jpg",
+
     "Museo Larco": "https://upload.wikimedia.org/wikipedia/commons/c/c7/Lima_museo_larco.jpg",
     "Malecón de Miraflores": "https://upload.wikimedia.org/wikipedia/commons/9/96/Miraflores_Costa_Verde_Skyline_%28Lima%2C_Peru%29.jpg",
     "Santuario Arqueológico de Pachacamac": "https://upload.wikimedia.org/wikipedia/commons/9/9f/Pachac%C3%A1mac-20.jpg",
@@ -1452,6 +1553,11 @@ def sembrar():
                 existente.duracion_estimada_min = l["duracion"]
                 existente.accesible_movilidad_reducida = l["accesible"]
                 existente.fuente_informacion = FUENTE_INFORMACION
+                # Solo "sube de categoría" el placeholder a una foto real; si
+                # ya tiene una imagen real (de IMAGENES_REALES o puesta a mano
+                # desde el panel de administrador), nunca se sobrescribe aquí.
+                if not existente.imagen_url or "picsum.photos" in existente.imagen_url:
+                    existente.imagen_url = imagen
                 actualizados += 1
                 continue
 
