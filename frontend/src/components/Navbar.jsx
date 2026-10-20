@@ -55,14 +55,9 @@ function Navbar() {
                   </NavLink>
                 </li>
                 <li className="nav-item">
-                  <Link to="/admin/lugares#admin-agregar" className="nav-link-ts d-flex align-items-center gap-2 px-3 py-2 rounded-pill">
-                    <i className="bi bi-plus-circle"></i> Agregar lugar
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/admin/lugares#admin-catalogo" className="nav-link-ts d-flex align-items-center gap-2 px-3 py-2 rounded-pill">
-                    <i className="bi bi-pencil-square"></i> Editar y eliminar
-                  </Link>
+                  <NavLink to="/admin/lugares" className={navLinkClass}>
+                    <i className="bi bi-pin-map-fill"></i> Lugares
+                  </NavLink>
                 </li>
               </>
             ) : (
