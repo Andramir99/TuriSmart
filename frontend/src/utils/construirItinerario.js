@@ -6,20 +6,32 @@ const HORA_INICIO_JORNADA_MIN = 9 * 60 // 09:00, en minutos desde medianoche
 const DURACION_POR_DEFECTO_MIN = 60
 const DESCANSO_ENTRE_PARADAS_MIN = 30
 
-// Ritmo de visita razonable: ~3 lugares por día. Menos de 5 en total se
+// Ritmo de visita por defecto si el usuario no elige uno propio (ver
+// "Máximo de lugares por día" en PasoTuViaje). Menos de 5 en total se
 // siente pobre incluso para un viaje de 1-2 días, y no tiene sentido
 // pedir más lugares de los que hay en el catálogo (24 por ahora).
-const LUGARES_POR_DIA = 3
+const LUGARES_POR_DIA_POR_DEFECTO = 3
 const MINIMO_RECOMENDACIONES = 5
 const MAXIMO_RECOMENDACIONES = 24
 
 // Cuántos lugares pedirle al recomendador (POST /recomendaciones) según
-// la duración del viaje — así un itinerario de 7 días recibe suficientes
-// lugares DISTINTOS para llenar los 7 días, no solo las mismas 5 de
-// siempre repartidas a medias.
-export function calcularCantidadRecomendaciones(dias) {
-  const cantidad = dias * LUGARES_POR_DIA
+// la duración del viaje y el máximo de lugares por día que eligió el
+// usuario (pedido del sponsor: que el turista pueda limitar cuántos
+// lugares quiere visitar por día, en vez de que el sistema le imponga
+// siempre el mismo ritmo) — así un itinerario de 7 días recibe
+// suficientes lugares DISTINTOS para llenar los 7 días, no solo las
+// mismas 5 de siempre repartidas a medias.
+export function calcularCantidadRecomendaciones(dias, maxLugaresPorDia = LUGARES_POR_DIA_POR_DEFECTO) {
+  const cantidad = dias * maxLugaresPorDia
   return Math.min(Math.max(cantidad, MINIMO_RECOMENDACIONES), MAXIMO_RECOMENDACIONES)
+}
+
+// El recomendador puede devolver más lugares de los que el usuario
+// realmente quiere por día (por el mínimo de calidad de arriba). Antes
+// de repartir en días, recortamos a lo que el usuario pidió como máximo,
+// para que el itinerario final nunca exceda ese límite.
+export function limitarRecomendacionesPorDia(recomendaciones, dias, maxLugaresPorDia = LUGARES_POR_DIA_POR_DEFECTO) {
+  return recomendaciones.slice(0, dias * maxLugaresPorDia)
 }
 
 function minutosAHoraTexto(minutos) {

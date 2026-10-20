@@ -1,13 +1,76 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import DestinoCard from '../components/DestinoCard.jsx'
 import CategoryPills from '../components/CategoryPills.jsx'
+import RecomendacionCard from '../components/RecomendacionCard.jsx'
+import GuiaBienvenida from '../components/GuiaBienvenida.jsx'
 import { useLugares } from '../hooks/useLugares.js'
+import { useAuth } from '../context/AuthContext.jsx'
+import { obtenerRecomendacionesParaTi } from '../services/recomendacionesService.js'
 import { CATEGORIAS } from '../utils/categorias.js'
 import '../styles/home.css'
 
 const HERO_IMAGE = 'https://picsum.photos/seed/lima-malecon-hero/1600/900'
 const MAX_DESTACADOS = 8
+
+// "Recomendados para ti" (Etapa 16): aprende de toda tu interacción real
+// con la plataforma, no solo de un formulario. Separado de Home en su
+// propio componente para no acoplar su estado de carga al del catálogo
+// general de abajo.
+function RecomendadosParaTi() {
+  const { token, usuario } = useAuth()
+  const [recomendaciones, setRecomendaciones] = useState([])
+  const [cargando, setCargando] = useState(true)
+
+  useEffect(() => {
+    if (!token) return
+    let cancelado = false
+    obtenerRecomendacionesParaTi(token, 8)
+      .then((datos) => {
+        if (!cancelado) setRecomendaciones(datos)
+      })
+      .catch(() => {
+        if (!cancelado) setRecomendaciones([])
+      })
+      .finally(() => {
+        if (!cancelado) setCargando(false)
+      })
+    return () => {
+      cancelado = true
+    }
+  }, [token])
+
+  if (!token) return null
+  if (!cargando && recomendaciones.length === 0) return null
+
+  return (
+    <section className="py-5 border-bottom">
+      <div className="container">
+        <div className="mb-4">
+          <p className="ts-eyebrow mb-1">
+            <i className="bi bi-stars me-1"></i> Para {usuario?.nombre?.split(' ')[0] || 'ti'}
+          </p>
+          <h2 className="ts-heading mb-0">Recomendados para ti</h2>
+        </div>
+
+        {cargando ? (
+          <div className="text-center text-muted py-4">
+            <span className="spinner-border spinner-border-sm me-2"></span>
+            Armando tus recomendaciones...
+          </div>
+        ) : (
+          <div className="row g-4">
+            {recomendaciones.map((recomendacion) => (
+              <div className="col-6 col-lg-3" key={recomendacion.lugar.id}>
+                <RecomendacionCard recomendacion={recomendacion} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
 
 function Home() {
   const navigate = useNavigate()
@@ -31,6 +94,8 @@ function Home() {
 
   return (
     <div>
+      <GuiaBienvenida />
+
       {/* ---- Hero ---- */}
       <section className="ts-hero" style={{ backgroundImage: `url(${HERO_IMAGE})` }}>
         <span className="ts-hero-badge">
@@ -50,7 +115,7 @@ function Home() {
           </p>
 
           <div className="d-flex justify-content-center gap-3 flex-wrap mb-4">
-            <Link to="/planificar" className="btn btn-ts-primary rounded-pill px-4 py-2">
+            <Link to="/planificar" id="tour-planificar" className="btn btn-ts-primary rounded-pill px-4 py-2">
               <i className="bi bi-stars me-1"></i> Planifica tu viaje
             </Link>
             <Link to="/explorar" className="btn btn-outline-light rounded-pill px-4 py-2">
@@ -97,6 +162,8 @@ function Home() {
           </div>
         </div>
       </section>
+
+      <RecomendadosParaTi />
 
       {/* ---- Destinos destacados ---- */}
       <section className="py-5">
@@ -169,10 +236,10 @@ function Home() {
                 <div className="ts-feature-icon ts-feature-icon--blue">
                   <i className="bi bi-map"></i>
                 </div>
-                <h3 className="h5 text-white mb-2">Mapas GIS en tiempo real</h3>
+                <h3 className="h5 text-white mb-2">Mapa GIS interactivo</h3>
                 <p className="small mb-0">
-                  Datos geoespaciales actualizados: tráfico, clima, afluencia y capas
-                  temáticas sobre Lima Metropolitana.
+                  Ubica los destinos de Lima, filtra por categoría, encuentra lugares
+                  cerca de ti y sigue tu ruta día por día.
                 </p>
               </div>
             </div>

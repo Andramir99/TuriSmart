@@ -19,7 +19,16 @@ settings = get_settings()
 
 # pool_pre_ping revisa que la conexión siga viva antes de usarla; evita
 # errores raros si PostgreSQL se reinició y la conexión quedó "colgada".
-engine = create_engine(settings.database_url, pool_pre_ping=True)
+#
+# client_encoding="utf8" fuerza a psycopg2 a decodificar SIEMPRE como
+# UTF-8, sin importar qué codificación haya negociado por defecto según
+# el entorno/locale del proceso que arrancó el servidor. Sin esto, los
+# datos en la base (que sí están bien guardados en UTF-8) podían
+# decodificarse mal en algunos procesos y bien en otros — el mismo dato,
+# mostrado distinto según cómo se haya lanzado uvicorn.
+engine = create_engine(
+    settings.database_url, pool_pre_ping=True, connect_args={"client_encoding": "utf8"}
+)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

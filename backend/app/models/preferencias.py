@@ -26,6 +26,10 @@ class Preferencia(Base):
     distrito_partida: Mapped[str | None] = mapped_column(String(80))
     tipo_viaje: Mapped[str] = mapped_column(String(20), nullable=False, default="solo")
     distancia_maxima_km: Mapped[float | None] = mapped_column(Numeric(6, 2))
+    # 'a_pie' | 'transporte_publico' | 'auto_taxi' | 'cualquiera'. Se usa
+    # solo para agregar una advertencia honesta en el motivo de la
+    # recomendación (Etapa 9), nunca para calcular una ruta real.
+    medio_transporte: Mapped[str] = mapped_column(String(20), nullable=False, default="cualquiera")
 
     fecha_actualizacion: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

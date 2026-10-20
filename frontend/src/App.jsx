@@ -11,6 +11,7 @@ import ItinerarioDetalle from './pages/ItinerarioDetalle.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Planificar from './pages/Planificar.jsx'
 import Login from './pages/Login.jsx'
+import Privacidad from './pages/Privacidad.jsx'
 import PageNotFound from './pages/PageNotFound.jsx'
 
 function App() {
@@ -50,6 +51,7 @@ function App() {
           />
           <Route path="/planificar" element={<Planificar />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/privacidad" element={<Privacidad />} />
           <Route path="*" element={<PageNotFound />} />
         </Routes>
       </main>

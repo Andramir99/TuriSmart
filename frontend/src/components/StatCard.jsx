@@ -8,10 +8,12 @@ function StatCard({ estadistica }) {
         >
           <i className={`bi ${estadistica.icono}`}></i>
         </span>
-        <span className="small text-success fw-semibold">
-          <i className="bi bi-graph-up-arrow me-1"></i>
-          {estadistica.tendencia}
-        </span>
+        {estadistica.tendencia && (
+          <span className="small text-success fw-semibold">
+            <i className="bi bi-graph-up-arrow me-1"></i>
+            {estadistica.tendencia}
+          </span>
+        )}
       </div>
       <p className="h4 mb-1">{estadistica.valor}</p>
       <p className="text-muted small mb-0">{estadistica.etiqueta}</p>

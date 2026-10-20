@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { claseBadgeCategoria } from '../utils/categorias.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import { crearInteraccion } from '../services/interaccionesService.js'
+import BotonAgregarItinerario from './BotonAgregarItinerario.jsx'
 
 const ETIQUETAS_DISTANCIA = {
   cerca: { texto: 'Cerca de tu punto de partida', icono: 'bi-geo-alt-fill', clase: 'text-success' },
@@ -23,9 +24,29 @@ function RecomendacionCard({ recomendacion }) {
   const { token } = useAuth()
   const [reaccion, setReaccion] = useState(null) // null | 'aceptada' | 'rechazada'
   const [enviando, setEnviando] = useState(false)
+  const [meGusta, setMeGusta] = useState(false)
+  const [enviandoMeGusta, setEnviandoMeGusta] = useState(false)
+
+  // Para medir qué tanto se ignoran las recomendaciones (Etapa 16, punto
+  // 3): si la tarjeta se desmonta sin ninguna interacción real, se
+  // registra como "ignorada". Cualquier interacción (reacción, me
+  // gusta, ver más, agregar) cancela ese registro.
+  const interactuoRef = useRef(false)
+
+  useEffect(() => {
+    if (!token) return
+    crearInteraccion({ lugar_id: lugar.id, tipo_interaccion: 'recomendacion_mostrada' }, token).catch(() => {})
+    return () => {
+      if (!interactuoRef.current) {
+        crearInteraccion({ lugar_id: lugar.id, tipo_interaccion: 'recomendacion_ignorada' }, token).catch(() => {})
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lugar.id, token])
 
   async function reaccionar(tipo) {
     if (enviando || reaccion) return
+    interactuoRef.current = true
     setEnviando(true)
     try {
       await crearInteraccion(
@@ -42,6 +63,29 @@ function RecomendacionCard({ recomendacion }) {
     }
   }
 
+  async function alternarMeGusta() {
+    if (!token || enviandoMeGusta) return
+    interactuoRef.current = true
+    const nuevoValor = !meGusta
+    setEnviandoMeGusta(true)
+    try {
+      await crearInteraccion(
+        { lugar_id: lugar.id, tipo_interaccion: nuevoValor ? 'me_gusta' : 'quitar_me_gusta' },
+        token,
+      )
+      setMeGusta(nuevoValor)
+    } catch {
+      // igual que en reaccionar(): si falla, el corazón no cambia
+    } finally {
+      setEnviandoMeGusta(false)
+    }
+  }
+
+  function manejarVerMas() {
+    interactuoRef.current = true
+    crearInteraccion({ lugar_id: lugar.id, tipo_interaccion: 'recomendacion_abierta' }, token).catch(() => {})
+  }
+
   return (
     <div className="ts-card h-100">
       <div className="ts-card-img-wrap">
@@ -49,6 +93,19 @@ function RecomendacionCard({ recomendacion }) {
         <span className={`ts-badge ${claseBadgeCategoria(lugar.categoria.slug)}`}>
           {lugar.categoria.nombre}
         </span>
+        {token && (
+          <button
+            type="button"
+            className="ts-card-like"
+            onClick={alternarMeGusta}
+            disabled={enviandoMeGusta}
+            aria-pressed={meGusta}
+            aria-label={meGusta ? 'Quitar me gusta' : 'Me gusta'}
+            title={meGusta ? 'Quitar me gusta' : 'Me gusta'}
+          >
+            <i className={meGusta ? 'bi bi-heart-fill text-danger' : 'bi bi-heart'}></i>
+          </button>
+        )}
       </div>
       <div className="p-3">
         <div className="d-flex justify-content-between align-items-start mb-1">
@@ -72,8 +129,8 @@ function RecomendacionCard({ recomendacion }) {
           {motivo}
         </p>
 
-        <div className="d-flex justify-content-between align-items-center">
-          <Link to={`/explorar/${lugar.id}`} className="ts-link-arrow small">
+        <div className="d-flex justify-content-between align-items-center mb-2">
+          <Link to={`/explorar/${lugar.id}`} className="ts-link-arrow small" onClick={manejarVerMas}>
             Ver más <i className="bi bi-arrow-right"></i>
           </Link>
 
@@ -114,6 +171,15 @@ function RecomendacionCard({ recomendacion }) {
             </div>
           )}
         </div>
+
+        <BotonAgregarItinerario
+          lugarId={lugar.id}
+          className="btn btn-sm btn-outline-primary rounded-pill w-100"
+          etiqueta="Agregar a mi itinerario"
+          onAbrir={() => {
+            interactuoRef.current = true
+          }}
+        />
       </div>
     </div>
   )

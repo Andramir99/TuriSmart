@@ -1,8 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
-import { obtenerItinerarioPorId, eliminarItinerario } from '../services/itinerariosService.js'
+import {
+  obtenerItinerarioPorId,
+  eliminarItinerario,
+  eliminarParada,
+  marcarParadaVisitada,
+  reordenarParadas,
+  renombrarItinerario,
+} from '../services/itinerariosService.js'
 import { crearValoracion } from '../services/valoracionesService.js'
+import { crearInteraccion } from '../services/interaccionesService.js'
 import { claseBadgeCategoria, colorCategoria } from '../utils/categorias.js'
 import {
   infoPresupuesto,
@@ -32,6 +40,12 @@ function ItinerarioDetalle() {
   const [errorValoracion, setErrorValoracion] = useState('')
   const [valoracionEnviada, setValoracionEnviada] = useState(false)
   const [mensajeCompartir, setMensajeCompartir] = useState('')
+  const [errorParada, setErrorParada] = useState('')
+
+  const [editandoTitulo, setEditandoTitulo] = useState(false)
+  const [tituloBorrador, setTituloBorrador] = useState('')
+  const [guardandoTitulo, setGuardandoTitulo] = useState(false)
+  const [errorTitulo, setErrorTitulo] = useState('')
 
   useEffect(() => {
     setCargando(true)
@@ -120,6 +134,64 @@ function ItinerarioDetalle() {
     }
   }
 
+  async function manejarAlternarVisitado(parada) {
+    setErrorParada('')
+    try {
+      const paradaActualizada = await marcarParadaVisitada(id, parada.id, !parada.visitado, token)
+      setItinerario((actual) => ({
+        ...actual,
+        detalles: actual.detalles.map((d) => (d.id === parada.id ? { ...d, visitado: paradaActualizada.visitado } : d)),
+      }))
+      // Señal fuerte para el perfil dinámico (Etapa 16): solo al marcar
+      // como visitado, no al desmarcar (eso no significa que ya no le
+      // interese la categoría).
+      if (paradaActualizada.visitado) {
+        crearInteraccion(
+          { lugar_id: parada.lugar.id, itinerario_id: Number(id), tipo_interaccion: 'marcado_visitado' },
+          token,
+        ).catch(() => {})
+      }
+    } catch (err) {
+      setErrorParada(err instanceof ApiError ? err.message : 'No se pudo actualizar la parada.')
+    }
+  }
+
+  async function manejarEliminarParada(parada) {
+    if (!window.confirm(`¿Quitar "${parada.lugar.nombre}" de este itinerario?`)) return
+    setErrorParada('')
+    try {
+      await eliminarParada(id, parada.id, token)
+      setItinerario((actual) => ({
+        ...actual,
+        detalles: actual.detalles.filter((d) => d.id !== parada.id),
+      }))
+      // Señal negativa suave (Etapa 16): quitarlo no significa que odie
+      // la categoría, solo se reduce un poco el interés, no se descarta.
+      crearInteraccion(
+        { lugar_id: parada.lugar.id, itinerario_id: Number(id), tipo_interaccion: 'eliminar_itinerario' },
+        token,
+      ).catch(() => {})
+    } catch (err) {
+      setErrorParada(err instanceof ApiError ? err.message : 'No se pudo quitar la parada.')
+    }
+  }
+
+  async function manejarMoverParada(dia, indice, direccion) {
+    const nuevoIndice = indice + direccion
+    if (nuevoIndice < 0 || nuevoIndice >= dia.paradas.length) return
+
+    const ordenIds = dia.paradas.map((p) => p.id)
+    ;[ordenIds[indice], ordenIds[nuevoIndice]] = [ordenIds[nuevoIndice], ordenIds[indice]]
+
+    setErrorParada('')
+    try {
+      const itinerarioActualizado = await reordenarParadas(id, dia.numero, ordenIds, token)
+      setItinerario(itinerarioActualizado)
+    } catch (err) {
+      setErrorParada(err instanceof ApiError ? err.message : 'No se pudo reordenar el itinerario.')
+    }
+  }
+
   async function manejarEliminar() {
     const confirmado = window.confirm(
       `¿Eliminar "${itinerario.titulo}"? Esta acción no se puede deshacer.`,
@@ -131,6 +203,31 @@ function ItinerarioDetalle() {
       navigate('/itinerario')
     } catch (err) {
       window.alert(err instanceof ApiError ? err.message : 'No se pudo eliminar el itinerario.')
+    }
+  }
+
+  function manejarEmpezarEdicionTitulo() {
+    setTituloBorrador(itinerario.titulo)
+    setErrorTitulo('')
+    setEditandoTitulo(true)
+  }
+
+  async function manejarGuardarTitulo() {
+    const nuevoTitulo = tituloBorrador.trim()
+    if (nuevoTitulo.length < 3) {
+      setErrorTitulo('El nombre debe tener al menos 3 caracteres.')
+      return
+    }
+    setGuardandoTitulo(true)
+    setErrorTitulo('')
+    try {
+      const actualizado = await renombrarItinerario(id, nuevoTitulo, token)
+      setItinerario((actual) => ({ ...actual, titulo: actualizado.titulo }))
+      setEditandoTitulo(false)
+    } catch (err) {
+      setErrorTitulo(err instanceof ApiError ? err.message : 'No se pudo guardar el nombre.')
+    } finally {
+      setGuardandoTitulo(false)
     }
   }
 
@@ -185,7 +282,54 @@ function ItinerarioDetalle() {
               <i className="bi bi-stars me-1"></i> Generado por TuriSmart IA
             </span>
           )}
-          <h1 className="ts-heading mb-2">{itinerario.titulo}</h1>
+          {editandoTitulo ? (
+            <div className="mb-2">
+              <div className="d-flex align-items-center gap-2" style={{ maxWidth: '420px' }}>
+                <input
+                  type="text"
+                  className="form-control form-control-lg"
+                  value={tituloBorrador}
+                  onChange={(evento) => setTituloBorrador(evento.target.value)}
+                  maxLength={150}
+                  autoFocus
+                  disabled={guardandoTitulo}
+                />
+                <button
+                  type="button"
+                  className="btn btn-ts-primary"
+                  onClick={manejarGuardarTitulo}
+                  disabled={guardandoTitulo}
+                  aria-label="Guardar nombre"
+                >
+                  <i className="bi bi-check-lg"></i>
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-light border"
+                  onClick={() => setEditandoTitulo(false)}
+                  disabled={guardandoTitulo}
+                  aria-label="Cancelar"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
+              </div>
+              {errorTitulo && <p className="text-danger small mt-1 mb-0">{errorTitulo}</p>}
+            </div>
+          ) : (
+            <h1 className="ts-heading mb-2">
+              {itinerario.titulo}{' '}
+              <button
+                type="button"
+                className="btn btn-sm btn-light border ts-no-imprimir"
+                onClick={manejarEmpezarEdicionTitulo}
+                aria-label="Renombrar itinerario"
+                title="Renombrar"
+                style={{ verticalAlign: 'middle', fontSize: '0.9rem' }}
+              >
+                <i className="bi bi-pencil"></i>
+              </button>
+            </h1>
+          )}
           <p className="text-muted mb-0 d-flex flex-wrap gap-3">
             <span>
               <i className="bi bi-calendar3 me-1"></i>
@@ -216,6 +360,12 @@ function ItinerarioDetalle() {
         </div>
       </div>
 
+      {errorParada && (
+        <div className="alert alert-danger small py-2 mt-3 ts-no-imprimir">
+          <i className="bi bi-exclamation-circle me-1"></i> {errorParada}
+        </div>
+      )}
+
       <div className="row g-4 mt-2">
         {/* ---- Columna izquierda: días y paradas ---- */}
         <div className="col-12 col-lg-8">
@@ -243,8 +393,11 @@ function ItinerarioDetalle() {
 
                 {!colapsado && (
                   <div className="ts-timeline mt-3">
-                    {dia.paradas.map((parada) => (
-                      <div className="ts-timeline-item" key={parada.id}>
+                    {dia.paradas.map((parada, indice) => (
+                      <div
+                        className={`ts-timeline-item${parada.visitado ? ' ts-timeline-item--visitado' : ''}`}
+                        key={parada.id}
+                      >
                         <span
                           className="ts-timeline-dot"
                           style={{ backgroundColor: colorCategoria(parada.lugar.categoria.slug) }}
@@ -268,6 +421,11 @@ function ItinerarioDetalle() {
                               >
                                 {parada.lugar.categoria.nombre}
                               </span>
+                              {parada.visitado && (
+                                <span className="ts-badge-inline ts-badge--natural">
+                                  <i className="bi bi-check-circle-fill me-1"></i>Visitado
+                                </span>
+                              )}
                             </div>
                             <Link
                               to={`/explorar/${parada.lugar.id}`}
@@ -287,6 +445,49 @@ function ItinerarioDetalle() {
                             {parada.nota && (
                               <p className="mb-0 small fst-italic text-muted">"{parada.nota}"</p>
                             )}
+                          </div>
+                          <div className="d-flex flex-column align-items-center gap-1 ts-no-imprimir">
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-light border p-1"
+                              style={{ lineHeight: 1 }}
+                              disabled={indice === 0}
+                              onClick={() => manejarMoverParada(dia, indice, -1)}
+                              aria-label="Mover antes"
+                              title="Mover antes"
+                            >
+                              <i className="bi bi-chevron-up"></i>
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-light border p-1"
+                              style={{ lineHeight: 1 }}
+                              disabled={indice === dia.paradas.length - 1}
+                              onClick={() => manejarMoverParada(dia, indice, 1)}
+                              aria-label="Mover después"
+                              title="Mover después"
+                            >
+                              <i className="bi bi-chevron-down"></i>
+                            </button>
+                            <div className="form-check form-switch mt-1" title="Marcar como visitado">
+                              <input
+                                className="form-check-input"
+                                type="checkbox"
+                                role="switch"
+                                checked={parada.visitado}
+                                onChange={() => manejarAlternarVisitado(parada)}
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-light border p-1 text-danger mt-1"
+                              style={{ lineHeight: 1 }}
+                              onClick={() => manejarEliminarParada(parada)}
+                              aria-label="Quitar del itinerario"
+                              title="Quitar del itinerario"
+                            >
+                              <i className="bi bi-trash"></i>
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -311,13 +512,26 @@ function ItinerarioDetalle() {
               <span className="fw-semibold">{itinerario.detalles.length} destinos</span>
             </div>
             <div className="ts-resumen-row">
-              <span className="text-muted">Presupuesto estimado</span>
+              <span className="text-muted">Personas</span>
+              <span className="fw-semibold">{itinerario.numero_personas}</span>
+            </div>
+            <div className="ts-resumen-row">
+              <span className="text-muted">Presupuesto estimado (total)</span>
               <span className="fw-semibold">
                 {itinerario.presupuesto_estimado_min !== null
                   ? `S/. ${itinerario.presupuesto_estimado_min.toFixed(0)}–${itinerario.presupuesto_estimado_max.toFixed(0)}`
                   : 'No disponible'}
               </span>
             </div>
+            {itinerario.presupuesto_por_dia &&
+              Object.entries(itinerario.presupuesto_por_dia)
+                .sort(([a], [b]) => Number(a) - Number(b))
+                .map(([dia, monto]) => (
+                  <div className="ts-resumen-row" key={dia}>
+                    <span className="text-muted">Presupuesto día {dia}</span>
+                    <span className="fw-semibold">S/. {monto.toFixed(0)}</span>
+                  </div>
+                ))}
             <div className="ts-resumen-row">
               <span className="text-muted">Distancia estimada</span>
               <span className="fw-semibold">

@@ -4,6 +4,28 @@ from sqlalchemy.orm import Session, joinedload
 from app.models.categorias import Categoria
 from app.models.lugares import Lugar
 
+# Para que una búsqueda de texto libre ("museos", "playa cerca") también
+# alimente el perfil dinámico (Etapa 16) aunque el usuario no haga clic en
+# ningún resultado. Es una heurística simple por palabra clave, no NLP:
+# alcanza para el propósito de inferir intención de categoría.
+PALABRAS_CLAVE_POR_CATEGORIA: dict[str, list[str]] = {
+    "arqueologico": ["huaca", "arqueolog", "piramide", "prehispan"],
+    "cultural": ["museo", "histor", "cultura", "arte", "iglesia", "catedral", "convento", "plaza", "colonial"],
+    "gastronomico": ["restaurante", "gastronom", "mercado", "comida", "chifa", "pisco", "ceviche"],
+    "aventura": ["aventura", "surf", "trekking", "senderismo", "deporte"],
+    "natural": ["natural", "parque", "lomas", "bosque", "humedal", "jardin", "playa"],
+    "relax": ["relax", "tranquilo", "spa", "malecon"],
+    "nocturno": ["bar", "noche", "discoteca", "nocturn"],
+}
+
+
+def inferir_categoria_desde_texto(texto: str) -> str | None:
+    texto_normalizado = texto.lower()
+    for slug, palabras in PALABRAS_CLAVE_POR_CATEGORIA.items():
+        if any(p in texto_normalizado for p in palabras):
+            return slug
+    return None
+
 
 def listar(
     db: Session,

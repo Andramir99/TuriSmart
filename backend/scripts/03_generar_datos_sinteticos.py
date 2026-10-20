@@ -33,6 +33,7 @@ from datetime import datetime, timedelta, timezone
 sys.stdout.reconfigure(encoding="utf-8")
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from app.core.anonimizacion import seudonimizar_usuario_id  # noqa: E402
 from app.core.seguridad import hash_contrasena  # noqa: E402
 from app.database.conexion import SessionLocal  # noqa: E402
 from app.models.categorias import Categoria  # noqa: E402
@@ -91,7 +92,7 @@ def crear_persona_sintetica(db, indice: int, categorias: list[Categoria], lugare
     # ---- Encuesta: declara entre 1 y 3 categorías de interés ----
     interes = random.sample([c.slug for c in categorias], k=random.randint(1, 3))
     encuesta = Encuesta(
-        usuario_id=usuario.id,
+        usuario_id_seudonimo=seudonimizar_usuario_id(usuario.id),
         consentimiento_datos=True,
         version_encuesta="sint-1.0",
         es_sintetico=True,

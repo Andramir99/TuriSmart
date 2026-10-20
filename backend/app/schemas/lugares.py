@@ -11,12 +11,17 @@ class LugarPublico(BaseModel):
     id: int
     nombre: str
     descripcion: str | None
+    descripcion_corta: str | None
     categoria: CategoriaPublica
     distrito: str
     direccion: str | None
     precio: float | None
     horario: str | None
     duracion_estimada_min: int | None
+    tipo_turismo: str | None
+    nivel_popularidad: int
+    servicios_disponibles: list[str] | None
+    recomendaciones_visitante: str | None
     lat: float
     lon: float
     accesible_movilidad_reducida: bool

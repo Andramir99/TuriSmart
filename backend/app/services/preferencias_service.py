@@ -22,6 +22,7 @@ def guardar_preferencias(db: Session, usuario: Usuario, datos: PreferenciaEntrad
     preferencia.tiempo_disponible_dias = datos.tiempo_disponible_dias
     preferencia.distrito_partida = datos.distrito_partida
     preferencia.distancia_maxima_km = datos.distancia_maxima_km
+    preferencia.medio_transporte = datos.medio_transporte
     preferencia.categorias = categorias_service.obtener_por_slugs(db, datos.categorias)
 
     db.commit()

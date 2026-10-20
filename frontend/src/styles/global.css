@@ -199,6 +199,31 @@ h3,
   border-radius: 999px;
 }
 
+.ts-card-like {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  color: var(--ts-text-muted, #6f6b64);
+  transition: transform 0.12s ease;
+}
+
+.ts-card-like:hover {
+  transform: scale(1.08);
+}
+
+.ts-card-like:disabled {
+  opacity: 0.6;
+}
+
 .ts-badge--cultural {
   background: #fbe7e6;
   color: #c1443c;

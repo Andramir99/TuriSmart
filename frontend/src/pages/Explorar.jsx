@@ -3,7 +3,9 @@ import { useSearchParams } from 'react-router-dom'
 import DestinoCard from '../components/DestinoCard.jsx'
 import CategoryPills from '../components/CategoryPills.jsx'
 import { useLugares } from '../hooks/useLugares.js'
-import { CATEGORIAS } from '../utils/categorias.js'
+import { useAuth } from '../context/AuthContext.jsx'
+import { crearInteraccion } from '../services/interaccionesService.js'
+import { CATEGORIAS, inferirCategoriaDesdeTexto } from '../utils/categorias.js'
 
 function Explorar() {
   // useSearchParams lee/escribe el "?q=..." de la URL. Así, si llegas aquí
@@ -13,6 +15,7 @@ function Explorar() {
   const [categoriaActiva, setCategoriaActiva] = useState('todos')
   const [busqueda, setBusqueda] = useState(searchParams.get('q') || '')
   const { lugares, cargando, error, recargar } = useLugares()
+  const { token } = useAuth()
 
   useEffect(() => {
     const query = searchParams.get('q')
@@ -34,6 +37,25 @@ function Explorar() {
   function manejarSubmit(evento) {
     evento.preventDefault()
     setSearchParams(busqueda ? { q: busqueda } : {})
+    // Señal para el perfil dinámico (Etapa 16): qué busca el usuario,
+    // aunque no haga clic en ningún resultado todavía. Solo con sesión.
+    if (token && busqueda.trim()) {
+      const texto = busqueda.trim()
+      crearInteraccion(
+        { tipo_interaccion: 'busqueda', metadatos: { texto, categoria: inferirCategoriaDesdeTexto(texto) } },
+        token,
+      ).catch(() => {})
+    }
+  }
+
+  function manejarCambiarCategoria(categoria) {
+    setCategoriaActiva(categoria)
+    if (token && categoria !== 'todos') {
+      crearInteraccion(
+        { tipo_interaccion: 'filtro', metadatos: { categoria } },
+        token,
+      ).catch(() => {})
+    }
   }
 
   return (
@@ -61,7 +83,7 @@ function Explorar() {
         <CategoryPills
           categorias={CATEGORIAS}
           activa={categoriaActiva}
-          onCambiar={setCategoriaActiva}
+          onCambiar={manejarCambiarCategoria}
         />
       </div>
 

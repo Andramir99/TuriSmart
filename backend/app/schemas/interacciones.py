@@ -2,7 +2,11 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-TIPOS_INTERACCION = "vista|clic|agregado_itinerario|recomendacion_aceptada|recomendacion_rechazada"
+TIPOS_INTERACCION = (
+    "vista|clic|agregado_itinerario|recomendacion_aceptada|recomendacion_rechazada|"
+    "busqueda|filtro|tiempo_visualizacion|me_gusta|quitar_me_gusta|eliminar_itinerario|"
+    "marcado_visitado|compartir|recomendacion_mostrada|recomendacion_ignorada|recomendacion_abierta"
+)
 
 
 class InteraccionEntrada(BaseModel):

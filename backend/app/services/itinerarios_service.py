@@ -62,8 +62,13 @@ def crear_itinerario(db: Session, usuario_id: int, datos: ItinerarioEntrada) -> 
 
     _validar_horarios(paradas_por_dia, lugares_por_id)
 
-    # Costo total: suma del precio de entrada de cada parada.
-    costo_total = sum(float(lugares_por_id[parada.lugar_id].precio or 0) for parada in datos.paradas)
+    # Costo total: suma del precio de entrada de cada parada, multiplicado
+    # por la cantidad de personas del grupo (cada una paga su entrada) —
+    # observación real del sponsor Nelson: "familia" puede ser 3, 4 o 5
+    # personas, y el presupuesto no era realista si no se contaba eso.
+    costo_total = sum(
+        float(lugares_por_id[parada.lugar_id].precio or 0) for parada in datos.paradas
+    ) * datos.numero_personas
 
     # Distancia estimada: suma de la distancia en línea recta entre
     # paradas consecutivas DEL MISMO DÍA (no tiene sentido sumar la
@@ -82,6 +87,7 @@ def crear_itinerario(db: Session, usuario_id: int, datos: ItinerarioEntrada) -> 
         dias=max(paradas_por_dia.keys()),
         presupuesto=datos.presupuesto,
         tipo_grupo=datos.tipo_grupo,
+        numero_personas=datos.numero_personas,
         presupuesto_estimado_min=round(costo_total, 2),
         presupuesto_estimado_max=round(costo_total * MARGEN_PRESUPUESTO_MAXIMO, 2),
         distancia_estimada_km=round(distancia_total, 2),
@@ -154,4 +160,110 @@ def obtener_por_id(db: Session, itinerario_id: int, usuario_id: int) -> Itinerar
 
 def eliminar(db: Session, itinerario: Itinerario) -> None:
     db.delete(itinerario)
+    db.commit()
+
+
+def _recalcular_totales(itinerario: Itinerario) -> None:
+    """Recalcula presupuesto y distancia estimados tras agregar o quitar
+    una parada suelta — misma fórmula que crear_itinerario, pero a partir
+    de las paradas que YA quedaron guardadas en vez de datos de entrada.
+    """
+    paradas_por_dia: dict[int, list[DetalleItinerario]] = {}
+    for detalle in itinerario.detalles:
+        paradas_por_dia.setdefault(detalle.dia_numero, []).append(detalle)
+
+    costo_total = sum(float(d.lugar.precio or 0) for d in itinerario.detalles) * itinerario.numero_personas
+
+    distancia_total = 0.0
+    for detalles_dia in paradas_por_dia.values():
+        detalles_ordenados = sorted(detalles_dia, key=lambda d: d.orden)
+        for origen, destino in zip(detalles_ordenados, detalles_ordenados[1:]):
+            distancia_total += distancia_km(origen.lugar.lat, origen.lugar.lon, destino.lugar.lat, destino.lugar.lon)
+
+    itinerario.presupuesto_estimado_min = round(costo_total, 2)
+    itinerario.presupuesto_estimado_max = round(costo_total * MARGEN_PRESUPUESTO_MAXIMO, 2)
+    itinerario.distancia_estimada_km = round(distancia_total, 2)
+    if paradas_por_dia:
+        itinerario.dias = max(itinerario.dias, max(paradas_por_dia.keys()))
+
+
+def agregar_parada(db: Session, itinerario: Itinerario, datos: ParadaEntrada) -> DetalleItinerario:
+    """Agrega UN lugar suelto a un itinerario ya existente (a diferencia
+    de crear_itinerario, que arma uno nuevo completo desde el asistente
+    de Planificar). Es lo que usa el botón "Agregar a mi itinerario" de
+    la ficha de un destino.
+    """
+    lugar = db.query(Lugar).filter(Lugar.id == datos.lugar_id, Lugar.activo.is_(True)).first()
+    if lugar is None:
+        raise ValueError(f"Lugar {datos.lugar_id} no encontrado en el catálogo.")
+
+    orden_maximo = max(
+        (d.orden for d in itinerario.detalles if d.dia_numero == datos.dia_numero), default=0
+    )
+    detalle = DetalleItinerario(
+        itinerario_id=itinerario.id,
+        lugar_id=datos.lugar_id,
+        dia_numero=datos.dia_numero,
+        orden=orden_maximo + 1,
+        hora_inicio=datos.hora_inicio,
+        duracion_min=datos.duracion_min,
+        nota=datos.nota,
+    )
+    db.add(detalle)
+    db.flush()
+    itinerario.detalles.append(detalle)
+    _recalcular_totales(itinerario)
+    db.commit()
+    db.refresh(detalle)
+    return detalle
+
+
+def eliminar_parada(db: Session, itinerario: Itinerario, parada_id: int) -> None:
+    parada = next((detalle for detalle in itinerario.detalles if detalle.id == parada_id), None)
+    if parada is None:
+        raise ValueError(f"La parada {parada_id} no pertenece a este itinerario.")
+
+    itinerario.detalles.remove(parada)
+    db.delete(parada)
+    _recalcular_totales(itinerario)
+    db.commit()
+
+
+def renombrar(db: Session, itinerario: Itinerario, nuevo_titulo: str) -> Itinerario:
+    itinerario.titulo = nuevo_titulo
+    db.commit()
+    db.refresh(itinerario)
+    return itinerario
+
+
+def marcar_parada_visitada(db: Session, itinerario: Itinerario, parada_id: int, visitado: bool) -> DetalleItinerario:
+    parada = next((detalle for detalle in itinerario.detalles if detalle.id == parada_id), None)
+    if parada is None:
+        raise ValueError(f"La parada {parada_id} no pertenece a este itinerario.")
+
+    parada.visitado = visitado
+    db.commit()
+    db.refresh(parada)
+    return parada
+
+
+def reordenar_paradas(db: Session, itinerario: Itinerario, dia_numero: int, orden_ids: list[int]) -> None:
+    paradas_del_dia = {detalle.id: detalle for detalle in itinerario.detalles if detalle.dia_numero == dia_numero}
+
+    if set(orden_ids) != set(paradas_del_dia.keys()):
+        raise ValueError(
+            "La lista de reordenamiento debe incluir exactamente las paradas del día "
+            f"{dia_numero}, ni más ni menos."
+        )
+
+    # Se pasa por un rango temporal (negativo) antes de asignar el orden
+    # final: si se escribiera el orden definitivo de una sola vez, en
+    # algún punto intermedio dos filas compartirían el mismo (itinerario_id,
+    # dia_numero, orden), violando la restricción única "uq_detalle_orden_por_dia"
+    # antes de que la transacción termine de aplicar todos los cambios.
+    for indice, parada_id in enumerate(orden_ids, start=1):
+        paradas_del_dia[parada_id].orden = -indice
+    db.flush()
+    for indice, parada_id in enumerate(orden_ids, start=1):
+        paradas_del_dia[parada_id].orden = indice
     db.commit()

@@ -54,8 +54,11 @@
 /* ---- Mapa de calor (maqueta) ---- */
 .ts-heatmap {
   position: relative;
-  min-height: 280px;
-  height: 100%;
+  /* Altura fija (no 100%): si se deja en 100%, esta tarjeta se estira
+     para igualar la altura de la tarjeta de tendencia de al lado (más
+     alta por el gráfico + leyenda), y queda un cuadro oscuro enorme que
+     empuja visualmente la fila de "Tipo de viaje" de abajo. */
+  height: 280px;
   border-radius: 12px;
   overflow: hidden;
   background: radial-gradient(circle at 30% 20%, #223047 0%, #131a26 60%, #0d1119 100%);

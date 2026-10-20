@@ -41,3 +41,24 @@ const COLOR_HEX_POR_CATEGORIA = {
 export function colorCategoria(slug) {
   return COLOR_HEX_POR_CATEGORIA[slug] || COLOR_HEX_POR_CATEGORIA.cultural
 }
+
+// Misma heurística que app/services/lugares_service.py en el backend:
+// para que una búsqueda de texto libre también alimente el perfil
+// dinámico (Etapa 16) aunque el usuario no haga clic en ningún resultado.
+const PALABRAS_CLAVE_POR_CATEGORIA = {
+  arqueologico: ['huaca', 'arqueolog', 'piramide', 'prehispan'],
+  cultural: ['museo', 'histor', 'cultura', 'arte', 'iglesia', 'catedral', 'convento', 'plaza', 'colonial'],
+  gastronomico: ['restaurante', 'gastronom', 'mercado', 'comida', 'chifa', 'pisco', 'ceviche'],
+  aventura: ['aventura', 'surf', 'trekking', 'senderismo', 'deporte'],
+  natural: ['natural', 'parque', 'lomas', 'bosque', 'humedal', 'jardin', 'playa'],
+  relax: ['relax', 'tranquilo', 'spa', 'malecon'],
+  nocturno: ['bar', 'noche', 'discoteca', 'nocturn'],
+}
+
+export function inferirCategoriaDesdeTexto(texto) {
+  const normalizado = texto.toLowerCase()
+  for (const [slug, palabras] of Object.entries(PALABRAS_CLAVE_POR_CATEGORIA)) {
+    if (palabras.some((palabra) => normalizado.includes(palabra))) return slug
+  }
+  return null
+}

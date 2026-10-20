@@ -11,11 +11,25 @@ const CENTRO_LIMA = [-12.08, -77.03]
 // defecto de Leaflet: así evitamos el problema clásico de Leaflet+Vite
 // donde los íconos por defecto no cargan (rutas de imagen rotas), y de
 // paso mantenemos el mismo lenguaje visual que ya usamos en toda la app.
-function crearIconoCategoria(colorHex, activo) {
-  const tamano = activo ? 26 : 18
+// "visitado" y "esSiguiente" solo existen en modo itinerario (ver
+// MapaGIS.jsx): permiten distinguir en el mapa qué paradas ya se hicieron,
+// cuál es la próxima, y cuáles faltan más adelante — en vez de mostrar
+// siempre el recorrido completo como si el turista no hubiera avanzado.
+function crearIconoCategoria(colorHex, activo, visitado = false, esSiguiente = false) {
+  if (visitado) {
+    return L.divIcon({
+      className: 'ts-leaflet-marker',
+      html: `<span style="display:flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#adb5bd;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);color:#fff;font-size:11px;">✓</span>`,
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+      popupAnchor: [0, -9],
+    })
+  }
+  const tamano = esSiguiente ? 30 : activo ? 26 : 18
+  const anillo = esSiguiente ? `0 0 0 4px ${colorHex}55, 0 2px 6px rgba(0,0,0,.4)` : '0 2px 6px rgba(0,0,0,.4)'
   return L.divIcon({
-    className: 'ts-leaflet-marker',
-    html: `<span style="display:block;width:${tamano}px;height:${tamano}px;border-radius:50%;background:${colorHex};border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);"></span>`,
+    className: esSiguiente ? 'ts-leaflet-marker ts-leaflet-marker--siguiente' : 'ts-leaflet-marker',
+    html: `<span style="display:block;width:${tamano}px;height:${tamano}px;border-radius:50%;background:${colorHex};border:3px solid #fff;box-shadow:${anillo};"></span>`,
     iconSize: [tamano, tamano],
     iconAnchor: [tamano / 2, tamano / 2],
     popupAnchor: [0, -tamano / 2],
@@ -65,11 +79,18 @@ function MapaLeaflet({ lugares, seleccionadoId, onSeleccionar, centrarEn, recorr
         <Marker
           key={lugar.id}
           position={[lugar.lat, lugar.lon]}
-          icon={crearIconoCategoria(colorCategoria(lugar.categoria.slug), lugar.id === seleccionadoId)}
+          icon={crearIconoCategoria(
+            colorCategoria(lugar.categoria.slug),
+            lugar.id === seleccionadoId,
+            lugar._visitado,
+            lugar._esSiguiente,
+          )}
           eventHandlers={{ click: () => onSeleccionar(lugar.id) }}
         >
           <Popup>
             <strong>{lugar.nombre}</strong>
+            {lugar._esSiguiente && <span className="text-primary"> · Siguiente parada</span>}
+            {lugar._visitado && <span className="text-muted"> · Ya visitado</span>}
             <br />
             {lugar.categoria.nombre} · {lugar.distrito}
             <br />

@@ -19,7 +19,7 @@ from app.api.dependencias import obtener_usuario_actual, obtener_usuario_opciona
 from app.database.conexion import get_db
 from app.models.usuarios import Usuario
 from app.schemas.recomendaciones import ModeloActivoPublico, RecomendacionEntrada, RecomendacionPublica
-from app.services import recomendaciones_ml_service, recomendaciones_service
+from app.services import recomendaciones_hibrido_service, recomendaciones_ml_service, recomendaciones_service
 
 router = APIRouter(prefix="/recomendaciones", tags=["Recomendaciones"])
 
@@ -48,3 +48,17 @@ def generar_recomendaciones_ml(
         return recomendaciones_ml_service.generar_recomendaciones_ml(db, usuario.id)
     except ValueError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error))
+
+
+@router.get("/para-ti", response_model=list[RecomendacionPublica])
+def recomendaciones_para_ti(
+    cantidad: int = 10,
+    usuario: Usuario = Depends(obtener_usuario_actual),
+    db: Session = Depends(get_db),
+):
+    """Sección "Recomendados para ti": combina el perfil dinámico (lo que
+    el usuario buscó, filtró, revisó, calificó o agregó a su itinerario)
+    con el KNN offline y la popularidad, con una porción de descubrimiento
+    para no mostrar siempre la misma categoría.
+    """
+    return recomendaciones_hibrido_service.generar_recomendaciones_para_ti(db, usuario.id, cantidad=cantidad)

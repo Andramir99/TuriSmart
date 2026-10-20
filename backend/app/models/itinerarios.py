@@ -37,6 +37,10 @@ class Itinerario(Base):
     dias: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     presupuesto: Mapped[str] = mapped_column(String(20), nullable=False, default="moderado")
     tipo_grupo: Mapped[str] = mapped_column(String(20), nullable=False, default="solo")
+    # "familia" o "amigos" puede ser 3, 4 o más personas, y cada una paga
+    # su propia entrada — sin este dato, el presupuesto estimado se
+    # queda corto para grupos grandes (observación real del sponsor Nelson).
+    numero_personas: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
     presupuesto_estimado_min: Mapped[float | None] = mapped_column(Numeric(8, 2))
     presupuesto_estimado_max: Mapped[float | None] = mapped_column(Numeric(8, 2))
@@ -55,6 +59,17 @@ class Itinerario(Base):
         back_populates="itinerario", cascade="all, delete-orphan", order_by="DetalleItinerario.dia_numero, DetalleItinerario.orden"
     )
 
+    # Igual que "lat"/"lon" en Lugar: se calcula al vuelo a partir de los
+    # detalles ya cargados, en vez de guardarlo repetido en una columna
+    # que se desactualizaría cada vez que alguien edite una parada.
+    @property
+    def presupuesto_por_dia(self) -> dict[int, float]:
+        totales: dict[int, float] = {}
+        for detalle in self.detalles:
+            precio_entrada = float(detalle.lugar.precio or 0) * self.numero_personas
+            totales[detalle.dia_numero] = round(totales.get(detalle.dia_numero, 0) + precio_entrada, 2)
+        return totales
+
 
 class DetalleItinerario(Base):
     __tablename__ = "detalle_itinerario"
@@ -71,6 +86,12 @@ class DetalleItinerario(Base):
     hora_inicio: Mapped[time | None] = mapped_column(Time)
     duracion_min: Mapped[int | None] = mapped_column(Integer)
     nota: Mapped[str | None] = mapped_column(String(255))
+
+    # Marca manual del turista: "ya estuve aquí". Sirve tanto para
+    # reflejar su avance real dentro del itinerario (en vez de asumir que
+    # siempre está en la primera parada) como para distinguirlo en el
+    # Mapa GIS (ver MapaGIS.jsx, modo itinerario).
+    visitado: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     itinerario: Mapped["Itinerario"] = relationship(back_populates="detalles")
     lugar: Mapped["Lugar"] = relationship()

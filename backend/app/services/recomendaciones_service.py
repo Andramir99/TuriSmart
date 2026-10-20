@@ -122,7 +122,26 @@ def _etiqueta_distancia(info: dict) -> str | None:
     return "lejos"
 
 
-def _construir_motivo(lugar: Lugar, presupuesto: str, distrito_partida: str | None, info: dict) -> str:
+MEDIO_TRANSPORTE_ETIQUETA = {
+    "a_pie": "a pie",
+    "transporte_publico": "en transporte público",
+    "auto_taxi": "en auto o taxi",
+}
+
+# A partir de cuántos km caminar deja de ser razonable para un turista
+# promedio. No es una medición real (eso requeriría datos del turista:
+# edad, condición física, etc.), es un umbral honesto y simple.
+DISTANCIA_MAXIMA_RAZONABLE_A_PIE_KM = 2.0
+
+
+def _construir_motivo(
+    lugar: Lugar,
+    presupuesto: str,
+    distrito_partida: str | None,
+    info: dict,
+    medio_transporte: str = "cualquiera",
+    movilidad_reducida: bool = False,
+) -> str:
     clausulas = []
     if info["coincide_categoria"]:
         clausulas.append(f"coincide con tu interés en {lugar.categoria.nombre.lower()}")
@@ -147,6 +166,30 @@ def _construir_motivo(lugar: Lugar, presupuesto: str, distrito_partida: str | No
             f" Eso sí: está a {info['distancia_km']:.1f} km de {distrito_partida}, "
             f"más lejos de lo que preferiste — considera el tiempo de traslado."
         )
+
+    # Advertencia de medio de transporte (Wu, reunión 27/08): no calculamos
+    # una ruta real, solo avisamos cuando la distancia declarada no es
+    # razonable para el medio elegido, en vez de dejar al turista adivinar.
+    distancia_km = info["distancia_km"]
+    if medio_transporte == "a_pie" and distancia_km is not None and distancia_km > DISTANCIA_MAXIMA_RAZONABLE_A_PIE_KM:
+        base += (
+            f" Considerando que prefieres trasladarte a pie, {distancia_km:.1f} km puede ser "
+            f"una distancia considerable — te sugerimos transporte público o taxi para este tramo."
+        )
+    elif medio_transporte in MEDIO_TRANSPORTE_ETIQUETA and distancia_km is not None:
+        base += f" Trasladarte {MEDIO_TRANSPORTE_ETIQUETA[medio_transporte]} hasta aquí es una opción razonable."
+
+    # Accesibilidad (Wu, reunión 27/08): nunca se descarta un lugar por
+    # esto, solo se hace explícito para que el turista decida con
+    # información completa, igual que con la distancia.
+    if movilidad_reducida:
+        if lugar.accesible_movilidad_reducida:
+            base += " Este lugar está señalado como accesible para movilidad reducida."
+        else:
+            base += (
+                " Ten en cuenta que este lugar todavía no está señalado como accesible "
+                "para movilidad reducida en nuestro catálogo."
+            )
 
     return base
 
@@ -189,7 +232,14 @@ def generar_recomendaciones(
         info = _puntuar_lugar(
             lugar, categorias_preferidas, datos.presupuesto, datos.distrito_partida, datos.distancia_maxima_km
         )
-        motivo = _construir_motivo(lugar, datos.presupuesto, datos.distrito_partida, info)
+        motivo = _construir_motivo(
+            lugar,
+            datos.presupuesto,
+            datos.distrito_partida,
+            info,
+            medio_transporte=datos.medio_transporte,
+            movilidad_reducida=datos.movilidad_reducida,
+        )
         candidatos.append(
             {
                 "lugar": lugar,

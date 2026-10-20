@@ -34,7 +34,6 @@ suficientes respuestas reales, pero NUNCA deben presentarse como
 resultados reales de la investigación.
 """
 
-import hashlib
 import os
 import sys
 
@@ -48,28 +47,25 @@ import pandas as pd
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from app.core.anonimizacion import seudonimizar_usuario_id  # noqa: E402
 from app.database.conexion import engine  # noqa: E402
-
-# No es un secreto de seguridad (los ids de usuario no son información
-# sensible por sí solos) — es solo para que el mismo usuario_id siempre
-# produzca el mismo hash entre corridas del script, y así se puedan
-# agrupar sus respuestas. Ver el docstring de arriba.
-SAL_ANONIMIZACION = "turismart-lima-tesis-2026"
 
 CARPETA_SALIDA = os.path.join(os.path.dirname(__file__), "..", "..", "data", "processed")
 
 
 def anonimizar_usuario_id(usuario_id) -> str | None:
+    # pd.read_sql representa un NULL de SQL como NaN (float), no como
+    # None -> hay que detectarlo aparte antes de pasarlo a la función
+    # compartida (app/core/anonimizacion.py), que solo espera int | None.
     if usuario_id is None or pd.isna(usuario_id):
         return None
-    texto = f"{SAL_ANONIMIZACION}:{int(usuario_id)}"
-    return hashlib.sha256(texto.encode("utf-8")).hexdigest()[:16]
+    return seudonimizar_usuario_id(int(usuario_id))
 
 
 def cargar_encuestas(incluir_sinteticos: bool) -> pd.DataFrame:
     condicion = "" if incluir_sinteticos else "WHERE e.es_sintetico = false"
     consulta = f"""
-        SELECT e.id AS encuesta_id, e.usuario_id, e.es_sintetico,
+        SELECT e.id AS encuesta_id, e.usuario_id_seudonimo AS usuario_hash, e.es_sintetico,
                e.fecha_creacion, r.pregunta, r.respuesta
         FROM encuestas e
         JOIN respuestas_encuesta r ON r.encuesta_id = e.id
@@ -89,9 +85,15 @@ def cargar_encuestas(incluir_sinteticos: bool) -> pd.DataFrame:
     # los valores únicos de cada columna del índice cuando hay más de
     # una — con usuario_id casi siempre NaN (encuestas anónimas), eso
     # generaba decenas de miles de filas fantasma. Los metadatos
-    # (usuario_id, es_sintetico, fecha_creacion) se pegan aparte con un
+    # (usuario_hash, es_sintetico, fecha_creacion) se pegan aparte con un
     # merge normal, que no tiene ese problema.
-    metadatos = largo[["encuesta_id", "usuario_id", "es_sintetico", "fecha_creacion"]].drop_duplicates(
+    #
+    # A diferencia de valoraciones/interacciones (más abajo), aquí NO hace
+    # falta llamar a anonimizar_usuario_id: la propia tabla "encuestas" ya
+    # guarda el seudónimo en vez del usuario_id real (ver
+    # app/core/anonimizacion.py y app/models/encuestas.py), así que el
+    # dato ya viene anonimizado desde el origen.
+    metadatos = largo[["encuesta_id", "usuario_hash", "es_sintetico", "fecha_creacion"]].drop_duplicates(
         subset=["encuesta_id"]
     )
     respuestas_pivoteadas = largo.pivot_table(
@@ -99,8 +101,6 @@ def cargar_encuestas(incluir_sinteticos: bool) -> pd.DataFrame:
     ).reset_index()
 
     ancho = metadatos.merge(respuestas_pivoteadas, on="encuesta_id", how="left")
-    ancho["usuario_hash"] = ancho["usuario_id"].apply(anonimizar_usuario_id)
-    ancho = ancho.drop(columns=["usuario_id"])
     return ancho
 
 

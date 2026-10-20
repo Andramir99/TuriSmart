@@ -51,7 +51,10 @@ export async function solicitar(ruta, { metodo = 'GET', cuerpo, token } = {}) {
       body: cuerpo !== undefined ? JSON.stringify(cuerpo) : undefined,
     })
   } catch {
-    throw new ApiError('No se pudo conectar con el servidor. ¿Está corriendo el backend?', 0)
+    throw new ApiError(
+      'El servicio no está disponible en este momento. Verifica tu conexión a internet e inténtalo nuevamente en unos minutos.',
+      0
+    )
   }
 
   const datos = await leerCuerpoJSON(respuesta)

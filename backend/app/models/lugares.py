@@ -28,6 +28,7 @@ class Lugar(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     nombre: Mapped[str] = mapped_column(String(150), nullable=False)
     descripcion: Mapped[str | None] = mapped_column(Text)
+    descripcion_corta: Mapped[str | None] = mapped_column(String(200))
     categoria_id: Mapped[int] = mapped_column(ForeignKey("categorias.id"), nullable=False)
 
     distrito: Mapped[str] = mapped_column(String(80), nullable=False)
@@ -35,6 +36,16 @@ class Lugar(Base):
     precio: Mapped[float | None] = mapped_column(Numeric(8, 2))
     horario: Mapped[str | None] = mapped_column(String(120))
     duracion_estimada_min: Mapped[int | None] = mapped_column(Integer)
+
+    # Tipo/subtipo turístico según la taxonomía de MINCETUR (más granular
+    # que "categoria", p. ej. categoria=cultural, tipo_turismo="Museos y otros").
+    tipo_turismo: Mapped[str | None] = mapped_column(String(120))
+    # 1 (poco conocido) a 5 (ícono turístico) — hoy se asigna según la
+    # jerarquía MINCETUR al sembrar los datos; a futuro puede recalcularse
+    # con valoraciones e interacciones reales.
+    nivel_popularidad: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    servicios_disponibles: Mapped[list[str] | None] = mapped_column(ARRAY(String(60)))
+    recomendaciones_visitante: Mapped[str | None] = mapped_column(Text)
 
     # Point(longitud, latitud) — en PostGIS y GeoJSON siempre va primero
     # la longitud, al revés de como solemos decir "lat, lon" al hablar.

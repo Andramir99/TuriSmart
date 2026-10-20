@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import (
+    analitica,
     auth,
     categorias,
     encuestas,
@@ -19,6 +20,7 @@ from app.api import (
     preferencias,
     recomendaciones,
     salud,
+    solicitudes_arco,
     usuarios,
     valoraciones,
 )
@@ -51,3 +53,5 @@ app.include_router(recomendaciones.router)
 app.include_router(itinerarios.router)
 app.include_router(valoraciones.router)
 app.include_router(interacciones.router)
+app.include_router(solicitudes_arco.router)
+app.include_router(analitica.router)

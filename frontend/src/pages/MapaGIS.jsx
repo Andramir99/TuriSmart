@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import DestinoListItem from '../components/DestinoListItem.jsx'
 import CategoryPills from '../components/CategoryPills.jsx'
 import MapaLeaflet from '../components/MapaLeaflet.jsx'
@@ -15,12 +16,28 @@ const COLORES_DIA = ['#c1443c', '#3355cc', '#2e7d32', '#d9822b', '#7b3fb8', '#08
 
 function MapaGIS() {
   const { autenticado, token } = useAuth()
+  const [searchParams] = useSearchParams()
   const [categoriaActiva, setCategoriaActiva] = useState('todos')
   const [busqueda, setBusqueda] = useState('')
   const [seleccionadoId, setSeleccionadoId] = useState(null)
   const [centrarEn, setCentrarEn] = useState(null)
 
   const { lugares, cargando, error, recargar } = useLugares()
+
+  // Si se llega desde el botón "Ver en el mapa" de un destino (ej.
+  // /mapa?lugar=12), lo selecciona y centra apenas carga el catálogo.
+  useEffect(() => {
+    const idParam = searchParams.get('lugar')
+    if (!idParam || lugares.length === 0) return
+    const destino = lugares.find((item) => item.id === Number(idParam))
+    if (destino) {
+      setSeleccionadoId(destino.id)
+      setCentrarEn([destino.lat, destino.lon])
+    }
+    // Solo al cargar el catálogo la primera vez; no queremos "saltar" de
+    // vuelta a este lugar si el usuario ya seleccionó otro manualmente.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lugares.length])
 
   // ---- Modo "Cerca de mí": geolocalización + PostGIS ST_DWithin real ----
   const [cercaDeMiActivo, setCercaDeMiActivo] = useState(false)
@@ -104,7 +121,20 @@ function MapaGIS() {
 
   const destinosFiltrados = useMemo(() => {
     if (modoItinerario) {
-      return itinerarioDetalle.detalles.map((parada) => parada.lugar)
+      // Se anota cada lugar con su progreso real (visitado / es el
+      // siguiente pendiente), para que el mapa refleje en qué parte del
+      // itinerario está el turista, en vez de mostrar siempre todo el
+      // recorrido como si recién estuviera empezando (observación de Wu
+      // en la reunión de la semana 5).
+      const paradasOrdenadas = [...itinerarioDetalle.detalles].sort(
+        (a, b) => a.dia_numero - b.dia_numero || a.orden - b.orden,
+      )
+      const siguientePendiente = paradasOrdenadas.find((parada) => !parada.visitado)
+      return itinerarioDetalle.detalles.map((parada) => ({
+        ...parada.lugar,
+        _visitado: parada.visitado,
+        _esSiguiente: siguientePendiente?.id === parada.id,
+      }))
     }
     if (cercaDeMiActivo) {
       return cercaDeMiLugares

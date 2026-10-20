@@ -47,12 +47,12 @@ function Navbar() {
         <div className="collapse navbar-collapse" id="turismartNav">
           <ul className="navbar-nav mx-lg-auto my-3 my-lg-0 gap-lg-2">
             <li className="nav-item">
-              <NavLink to="/explorar" className={navLinkClass}>
+              <NavLink to="/explorar" id="tour-explorar" className={navLinkClass}>
                 <i className="bi bi-geo-alt"></i> Explorar
               </NavLink>
             </li>
             <li className="nav-item">
-              <NavLink to="/mapa" className={navLinkClass}>
+              <NavLink to="/mapa" id="tour-mapa" className={navLinkClass}>
                 <i className="bi bi-map"></i> Mapa GIS
               </NavLink>
             </li>
@@ -75,7 +75,7 @@ function Navbar() {
 
             {autenticado ? (
               <div className="d-flex align-items-center gap-2">
-                <span className="ts-user-icon" aria-hidden="true">
+                <span className="ts-user-icon" id="tour-cuenta" aria-hidden="true">
                   <i className="bi bi-person-fill"></i>
                 </span>
                 <span className="small fw-semibold text-truncate" style={{ maxWidth: '120px' }}>

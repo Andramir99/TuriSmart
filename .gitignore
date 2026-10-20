@@ -33,6 +33,9 @@ data/processed/*
 *.sqlite3
 *.db
 
+# ===== Docker (raíz) =====
+.env
+
 # ===== Otros =====
 *.log
 .pytest_cache/

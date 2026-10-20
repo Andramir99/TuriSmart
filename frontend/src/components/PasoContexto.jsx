@@ -7,6 +7,13 @@ const HORARIOS = [
   { slug: 'cualquiera', etiqueta: 'Cualquiera' },
 ]
 
+const MEDIOS_TRANSPORTE = [
+  { slug: 'a_pie', etiqueta: 'A pie' },
+  { slug: 'transporte_publico', etiqueta: 'Transporte público' },
+  { slug: 'auto_taxi', etiqueta: 'Auto o taxi' },
+  { slug: 'cualquiera', etiqueta: 'Cualquiera' },
+]
+
 function PasoContexto({ formulario, onCambiar }) {
   const presupuesto = infoPresupuesto(formulario.presupuesto)
   const grupo = infoGrupo(formulario.tipoGrupo)
@@ -78,6 +85,28 @@ function PasoContexto({ formulario, onCambiar }) {
       <div className="d-flex justify-content-between small text-muted mb-4">
         <span>1 km</span>
         <span>30 km</span>
+      </div>
+
+      <p className="form-label fw-semibold mb-2">¿Cómo prefieres trasladarte?</p>
+      <p className="small text-muted mb-2">
+        Usamos esto solo para avisarte si una distancia es mucha para el medio elegido, no
+        calculamos una ruta real.
+      </p>
+      <div className="row g-2 mb-4">
+        {MEDIOS_TRANSPORTE.map((opcion) => (
+          <div className="col-6 col-md-3" key={opcion.slug}>
+            <button
+              type="button"
+              className={`ts-opcion-boton w-100${
+                formulario.medioTransporte === opcion.slug ? ' ts-opcion-boton--activo' : ''
+              }`}
+              onClick={() => onCambiar('medioTransporte', opcion.slug)}
+              aria-pressed={formulario.medioTransporte === opcion.slug}
+            >
+              {opcion.etiqueta}
+            </button>
+          </div>
+        ))}
       </div>
 
       <p className="form-label fw-semibold mb-2">Horario preferido</p>

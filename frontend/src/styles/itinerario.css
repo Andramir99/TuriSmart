@@ -90,6 +90,15 @@
   flex-shrink: 0;
 }
 
+.ts-timeline-item--visitado .ts-timeline-card {
+  background: #eef6ec;
+  opacity: 0.8;
+}
+
+.ts-timeline-item--visitado .ts-timeline-dot {
+  background-color: #3f7a45 !important;
+}
+
 /* ---- Panel lateral "Resumen del itinerario" ---- */
 .ts-resumen-box {
   background: #fff;

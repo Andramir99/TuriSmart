@@ -8,7 +8,7 @@ datos, para no complicar el modelo con un CHECK constraint prematuro).
 from datetime import datetime
 
 from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
 
@@ -23,6 +23,9 @@ class Valoracion(Base):
     usuario_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id", ondelete="SET NULL"))
     lugar_id: Mapped[int | None] = mapped_column(ForeignKey("lugares.id", ondelete="SET NULL"))
     itinerario_id: Mapped[int | None] = mapped_column(ForeignKey("itinerarios.id", ondelete="SET NULL"))
+
+    # Solo lectura — igual que en Interaccion, para el perfil dinámico.
+    lugar: Mapped["Lugar | None"] = relationship(viewonly=True)
 
     puntuacion: Mapped[int] = mapped_column(Integer, nullable=False)
     recomendacion_util: Mapped[bool | None] = mapped_column()

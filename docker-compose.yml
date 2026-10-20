@@ -1,0 +1,60 @@
+# Levanta TuriSmart Lima completo: base de datos (PostgreSQL + PostGIS),
+# backend (FastAPI) y frontend (React servido por nginx).
+#
+# Uso:
+#   1. cp .env.example .env   y completa POSTGRES_PASSWORD y JWT_SECRET_KEY
+#   2. docker compose up --build
+#   3. abre http://localhost:5173
+#
+# La primera vez, el backend aplica las migraciones y siembra el
+# catálogo de 49 lugares automáticamente (ver backend/Dockerfile) — no
+# hace falta ningún paso manual adicional.
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: turismart_app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en tu .env (copia .env.example)}
+      POSTGRES_DB: turismart_db
+    volumes:
+      - turismart_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U turismart_app -d turismart_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: production
+      CORS_ORIGINS: ${FRONTEND_URL:-http://localhost:5173}
+      DATABASE_URL: postgresql+psycopg2://turismart_app:${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en tu .env (copia .env.example)}@db:5432/turismart_db
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Define JWT_SECRET_KEY en tu .env (copia .env.example)}
+      JWT_ALGORITMO: HS256
+      JWT_EXPIRA_MINUTOS: 1440
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  turismart_db_data:

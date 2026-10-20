@@ -7,6 +7,7 @@ import { crearInteraccion } from '../services/interaccionesService.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import { ApiError } from '../services/api.js'
 import EstrellasSelector from '../components/EstrellasSelector.jsx'
+import BotonAgregarItinerario from '../components/BotonAgregarItinerario.jsx'
 
 function DestinoDetalle() {
   const { id } = useParams()
@@ -50,11 +51,27 @@ function DestinoDetalle() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
-  function manejarAgregarAItinerario() {
-    if (destino) {
-      crearInteraccion({ lugar_id: destino.id, tipo_interaccion: 'clic' }, token).catch(() => {})
+  // Tiempo de visualización (Etapa 16): cuánto se queda leyendo este
+  // lugar, no solo si entró. Se registra al salir de la página (cambia
+  // de ruta o cierra la pestaña); el perfil dinámico descarta las
+  // visitas muy cortas (< 20s) por su cuenta, así que aquí se manda el
+  // tiempo real sin filtrar nada.
+  useEffect(() => {
+    const inicio = Date.now()
+    function registrarTiempo() {
+      const segundos = Math.round((Date.now() - inicio) / 1000)
+      crearInteraccion(
+        { lugar_id: Number(id), tipo_interaccion: 'tiempo_visualizacion', metadatos: { segundos } },
+        token,
+      ).catch(() => {})
     }
-  }
+    window.addEventListener('beforeunload', registrarTiempo)
+    return () => {
+      window.removeEventListener('beforeunload', registrarTiempo)
+      registrarTiempo()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
 
   async function manejarEnviarValoracion(evento) {
     evento.preventDefault()
@@ -228,7 +245,27 @@ function DestinoDetalle() {
             </span>
           </p>
 
+          {destino.descripcion_corta && (
+            <p className="text-muted mb-2 fst-italic">{destino.descripcion_corta}</p>
+          )}
           <p className="mb-3">{destino.descripcion}</p>
+
+          {destino.tipo_turismo && (
+            <p className="small mb-2">
+              <i className="bi bi-tag me-2"></i>
+              {destino.tipo_turismo}
+            </p>
+          )}
+
+          {destino.etiquetas && destino.etiquetas.length > 0 && (
+            <div className="mb-3 d-flex flex-wrap gap-2">
+              {destino.etiquetas.map((etiqueta) => (
+                <span key={etiqueta} className="ts-badge-inline ts-badge--natural">
+                  #{etiqueta}
+                </span>
+              ))}
+            </div>
+          )}
 
           <ul className="list-unstyled small text-muted mb-4 d-flex flex-column gap-2">
             {destino.precio !== null && (
@@ -257,13 +294,33 @@ function DestinoDetalle() {
             )}
           </ul>
 
-          <Link
-            to="/itinerario"
-            className="btn btn-ts-primary rounded-pill px-4"
-            onClick={manejarAgregarAItinerario}
-          >
-            <i className="bi bi-plus-lg me-1"></i> Agregar a mi itinerario
-          </Link>
+          {destino.servicios_disponibles && destino.servicios_disponibles.length > 0 && (
+            <div className="mb-3">
+              <h2 className="h6 mb-2">Servicios disponibles</h2>
+              <ul className="list-unstyled small text-muted mb-0 d-flex flex-column gap-1">
+                {destino.servicios_disponibles.map((servicio) => (
+                  <li key={servicio}>
+                    <i className="bi bi-check2 me-2 text-success"></i>
+                    {servicio}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {destino.recomendaciones_visitante && (
+            <div className="alert alert-light border small mb-4">
+              <i className="bi bi-lightbulb me-2 text-warning"></i>
+              {destino.recomendaciones_visitante}
+            </div>
+          )}
+
+          <div className="d-flex flex-wrap gap-2">
+            <BotonAgregarItinerario lugarId={destino.id} />
+            <Link to={`/mapa?lugar=${destino.id}`} className="btn btn-outline-secondary rounded-pill px-4">
+              <i className="bi bi-geo-alt me-1"></i> Ver en el mapa
+            </Link>
+          </div>
         </div>
       </div>
     </div>

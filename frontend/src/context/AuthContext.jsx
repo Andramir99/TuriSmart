@@ -3,6 +3,11 @@ import * as authService from '../services/authService.js'
 
 const AuthContext = createContext(null)
 const CLAVE_TOKEN = 'turismart_token'
+// Igual mecanismo que CLAVE_TOKEN, pero para la guía de bienvenida
+// (GuiaBienvenida.jsx): se marca solo al crear una cuenta nueva, nunca al
+// iniciar sesión en una ya existente, y se borra apenas el usuario ve o
+// salta el tour — así no vuelve a aparecer.
+export const CLAVE_TOUR_PENDIENTE = 'turismart_tour_pendiente'
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem(CLAVE_TOKEN))
@@ -56,6 +61,7 @@ export function AuthProvider({ children }) {
       // login para obtener el token.
       await authService.registrar({ nombre, correo, contrasena })
       await iniciarSesion(correo, contrasena)
+      localStorage.setItem(CLAVE_TOUR_PENDIENTE, '1')
     },
     [iniciarSesion],
   )

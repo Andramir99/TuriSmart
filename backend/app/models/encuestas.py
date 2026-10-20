@@ -1,7 +1,7 @@
 """Tablas "encuestas" y "respuestas_encuesta".
 
 Una encuesta puede responderse SIN estar registrado (la Home promete
-"itinerario personalizado... sin registro previo"), por eso usuario_id es
+"itinerario personalizado... sin registro previo"), por eso el usuario es
 opcional. "respuestas_encuesta" guarda una fila por cada pregunta
 respondida (pregunta/respuesta como texto libre) en vez de una columna
 por pregunta, porque el enunciado pide capturar muchos campos distintos
@@ -24,7 +24,15 @@ class Encuesta(Base):
     __tablename__ = "encuestas"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    usuario_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id", ondelete="SET NULL"))
+
+    # Seudónimo del usuario (hash de un solo sentido, ver
+    # app/core/anonimizacion.py), NO su usuario_id real: esta tabla es
+    # solo para fines de investigación, y ninguna pantalla de la
+    # aplicación necesita volver a identificar al usuario a partir de una
+    # encuesta. Con el mismo seudónimo repetido se pueden seguir
+    # agrupando los patrones de comportamiento de una misma persona, sin
+    # poder revertirlo a su cuenta real solo con esta tabla.
+    usuario_id_seudonimo: Mapped[str | None] = mapped_column(String(16))
 
     # Consentimiento explícito para usar las respuestas de forma académica
     # y anonimizada (requisito del enunciado). Sin esto en True, esta

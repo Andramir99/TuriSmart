@@ -14,9 +14,11 @@ import { crearItinerario } from '../services/itinerariosService.js'
 import {
   construirParadasDesdeRecomendaciones,
   calcularCantidadRecomendaciones,
+  limitarRecomendacionesPorDia,
 } from '../utils/construirItinerario.js'
 import { ApiError } from '../services/api.js'
 import '../styles/wizard.css'
+import '../styles/itinerario.css'
 
 const TITULOS_PASO = {
   1: { eyebrow: 'Paso 1 de 3', titulo: '¿Qué tipo de viajero eres?', descripcion: 'Selecciona todas las que apliquen. Usaremos esto para personalizar tu ruta.' },
@@ -25,12 +27,16 @@ const TITULOS_PASO = {
 }
 
 const FORMULARIO_INICIAL = {
+  nombreViaje: '',
   tiposViajero: [],
   duracionDias: 3,
+  maxLugaresPorDia: 3,
   presupuesto: 'moderado',
   tipoGrupo: 'pareja',
+  numeroPersonas: 2,
   distritoPartida: '',
   distanciaMaximaKm: 10,
+  medioTransporte: 'cualquiera',
   horarioPreferido: 'cualquiera',
   movilidadReducida: false,
   idioma: 'es',
@@ -111,6 +117,7 @@ function Planificar() {
         tipo_compania: formulario.tipoGrupo,
         distrito_partida: formulario.distritoPartida,
         distancia_maxima_km: String(formulario.distanciaMaximaKm),
+        medio_transporte: formulario.medioTransporte,
         horario_preferido: formulario.horarioPreferido,
         movilidad_reducida: String(formulario.movilidadReducida),
         idioma_preferido: formulario.idioma,
@@ -132,6 +139,7 @@ function Planificar() {
             tiempo_disponible_dias: formulario.duracionDias,
             distrito_partida: formulario.distritoPartida || null,
             distancia_maxima_km: formulario.distanciaMaximaKm,
+            medio_transporte: formulario.medioTransporte,
             categorias: formulario.tiposViajero,
           },
           token,
@@ -150,11 +158,23 @@ function Planificar() {
             presupuesto: formulario.presupuesto,
             distrito_partida: formulario.distritoPartida || null,
             distancia_maxima_km: formulario.distanciaMaximaKm,
-            cantidad: calcularCantidadRecomendaciones(formulario.duracionDias),
+            medio_transporte: formulario.medioTransporte,
+            movilidad_reducida: formulario.movilidadReducida,
+            cantidad: calcularCantidadRecomendaciones(formulario.duracionDias, formulario.maxLugaresPorDia),
           },
           token,
         )
-        setRecomendaciones(resultado)
+        // El recomendador puede devolver más lugares de los que el
+        // usuario quiere ver por día (pedido del sponsor Nelson: no
+        // sobrecargar el día con lugares de más), así que recortamos
+        // antes de mostrar las tarjetas y antes de armar el itinerario,
+        // para que ambas cosas coincidan.
+        const recomendacionesLimitadas = limitarRecomendacionesPorDia(
+          resultado,
+          formulario.duracionDias,
+          formulario.maxLugaresPorDia,
+        )
+        setRecomendaciones(recomendacionesLimitadas)
 
         // Solo con sesión iniciada tiene sentido guardar un itinerario:
         // "Mis Itinerarios" es una lista ligada a la cuenta (Etapa 10).
@@ -162,15 +182,17 @@ function Planificar() {
         // ya cumplen la promesa de la Home ("sin registro previo").
         if (autenticado) {
           try {
-            const paradas = construirParadasDesdeRecomendaciones(resultado, formulario.duracionDias)
+            const paradas = construirParadasDesdeRecomendaciones(recomendacionesLimitadas, formulario.duracionDias)
             const nuevoItinerario = await crearItinerario(
               {
-                titulo: `Lima a tu medida — ${formulario.duracionDias} día${formulario.duracionDias === 1 ? '' : 's'}`,
+                titulo:
+                  formulario.nombreViaje.trim() ||
+                  `Lima a tu medida — ${formulario.duracionDias} día${formulario.duracionDias === 1 ? '' : 's'} · ${new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'short' })}`,
                 fecha_inicio: formulario.fechaInicio || null,
                 presupuesto: formulario.presupuesto,
                 tipo_grupo: formulario.tipoGrupo,
-                recomendacion_ia:
-                  'Itinerario armado automáticamente a partir de tus 5 mejores recomendaciones.',
+                numero_personas: formulario.numeroPersonas,
+                recomendacion_ia: `Itinerario armado automáticamente a partir de tus ${recomendacionesLimitadas.length} mejores recomendaciones, respetando tu máximo de ${formulario.maxLugaresPorDia} lugar${formulario.maxLugaresPorDia === 1 ? '' : 'es'} por día.`,
                 paradas,
               },
               token,
@@ -206,7 +228,9 @@ function Planificar() {
         </h1>
         <p className="text-muted mb-4 mx-auto" style={{ maxWidth: '560px' }}>
           Guardamos tus preferencias{autenticado ? ' en tu cuenta' : ' de forma anónima'}. Estas
-          son las {recomendaciones.length || calcularCantidadRecomendaciones(formulario.duracionDias)}{' '}
+          son las{' '}
+          {recomendaciones.length ||
+            calcularCantidadRecomendaciones(formulario.duracionDias, formulario.maxLugaresPorDia)}{' '}
           mejores coincidencias para tu viaje de {formulario.duracionDias} día
           {formulario.duracionDias === 1 ? '' : 's'}, según el recomendador inicial de TuriSmart
           (basado en reglas de contenido, no todavía en Machine Learning entrenado)
@@ -235,6 +259,45 @@ function Planificar() {
         {autenticado && errorItinerario && (
           <div className="alert alert-warning d-inline-block mb-4">
             <i className="bi bi-exclamation-triangle me-1"></i> {errorItinerario}
+          </div>
+        )}
+
+        {itinerarioCreado && (
+          <div className="ts-resumen-box text-start mx-auto mb-4" style={{ maxWidth: '420px' }}>
+            <h2 className="h6 mb-3">Resumen de tu itinerario</h2>
+            <div className="ts-resumen-row">
+              <span className="text-muted">Personas</span>
+              <span className="fw-semibold">{itinerarioCreado.numero_personas}</span>
+            </div>
+            <div className="ts-resumen-row">
+              <span className="text-muted">Presupuesto estimado (total)</span>
+              <span className="fw-semibold">
+                {itinerarioCreado.presupuesto_estimado_min !== null
+                  ? `S/. ${itinerarioCreado.presupuesto_estimado_min.toFixed(0)}–${itinerarioCreado.presupuesto_estimado_max.toFixed(0)}`
+                  : 'No disponible'}
+              </span>
+            </div>
+            {itinerarioCreado.presupuesto_por_dia &&
+              Object.entries(itinerarioCreado.presupuesto_por_dia)
+                .sort(([a], [b]) => Number(a) - Number(b))
+                .map(([dia, monto]) => (
+                  <div className="ts-resumen-row" key={dia}>
+                    <span className="text-muted">Presupuesto día {dia}</span>
+                    <span className="fw-semibold">S/. {monto.toFixed(0)}</span>
+                  </div>
+                ))}
+            <div className="ts-resumen-row">
+              <span className="text-muted">Distancia estimada</span>
+              <span className="fw-semibold">
+                {itinerarioCreado.distancia_estimada_km !== null
+                  ? `${itinerarioCreado.distancia_estimada_km.toFixed(1)} km`
+                  : 'No disponible'}
+              </span>
+            </div>
+            <p className="text-muted small mb-0 mt-2">
+              Estimado según los precios de entrada de los lugares recomendados, multiplicado por
+              el número de personas. No incluye transporte ni alimentación.
+            </p>
           </div>
         )}
 

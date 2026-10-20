@@ -16,6 +16,7 @@ from app.models.modelos_ml import ModeloML
 from app.models.perfiles import Perfil
 from app.models.preferencias import Preferencia, PreferenciaCategoria
 from app.models.recomendaciones import Recomendacion
+from app.models.solicitudes_arco import SolicitudArco
 from app.models.usuarios import Usuario
 from app.models.valoraciones import Valoracion
 
@@ -32,6 +33,7 @@ __all__ = [
     "PreferenciaCategoria",
     "Recomendacion",
     "RespuestaEncuesta",
+    "SolicitudArco",
     "Usuario",
     "Valoracion",
 ]
