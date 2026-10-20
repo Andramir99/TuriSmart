@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import { ApiError } from '../services/api.js'
-import { solicitarRestablecimiento } from '../services/authService.js'
+import { restablecerContrasena, solicitarRestablecimiento } from '../services/authService.js'
 import CampoContrasena from '../components/CampoContrasena.jsx'
 import '../styles/wizard.css'
 
@@ -28,9 +28,13 @@ function Login() {
 
   // Resultado de pedir el restablecimiento: como el proyecto no tiene un
   // servidor de correo configurado (ver README), el backend devuelve el
-  // enlace directo en la respuesta en vez de mandarlo por email — modo
-  // prototipo, documentado como limitación conocida.
+  // token directo en la respuesta (no se envía ningún correo real) y todo
+  // el flujo sigue en esta misma pantalla — no hay un enlace en el que
+  // hacer clic ni una página aparte, solo pasa al siguiente paso.
   const [resultadoOlvide, setResultadoOlvide] = useState(null)
+  const [nuevaContrasena, setNuevaContrasena] = useState('')
+  const [confirmacion, setConfirmacion] = useState('')
+  const [contrasenaRestablecida, setContrasenaRestablecida] = useState(false)
 
   function actualizarCampo(campo, valor) {
     setForm((actual) => ({ ...actual, [campo]: valor }))
@@ -40,6 +44,9 @@ function Login() {
     setModo(nuevoModo)
     setError('')
     setResultadoOlvide(null)
+    setNuevaContrasena('')
+    setConfirmacion('')
+    setContrasenaRestablecida(false)
   }
 
   async function manejarSubmit(evento) {
@@ -53,9 +60,16 @@ function Login() {
       } else if (modo === 'registro') {
         await registrar(form.nombre, form.correo, form.contrasena)
         navigate(destino, { replace: true })
-      } else {
+      } else if (modo === 'olvide' && !resultadoOlvide) {
         const respuesta = await solicitarRestablecimiento(form.correo)
         setResultadoOlvide(respuesta)
+      } else {
+        if (nuevaContrasena !== confirmacion) {
+          setError('Las contraseñas no coinciden.')
+          return
+        }
+        await restablecerContrasena(resultadoOlvide.token, nuevaContrasena)
+        setContrasenaRestablecida(true)
       }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo conectar con el servidor.')
@@ -64,6 +78,10 @@ function Login() {
     }
   }
 
+  const pidiendoCorreo = modo === 'olvide' && !resultadoOlvide
+  const pidiendoNuevaContrasena = modo === 'olvide' && resultadoOlvide?.token && !contrasenaRestablecida
+  const sinCuentaParaEseCorreo = modo === 'olvide' && resultadoOlvide && !resultadoOlvide.token
+
   return (
     <div className="container py-5" style={{ maxWidth: '440px' }}>
       <p className="ts-eyebrow mb-1">Cuenta</p>
@@ -71,30 +89,27 @@ function Login() {
       <p className="text-muted mb-4">
         {modo === 'login' && 'Ingresa para ver y guardar tus itinerarios.'}
         {modo === 'registro' && 'Regístrate para guardar tus itinerarios y valorar lugares.'}
-        {modo === 'olvide' && 'Ingresa tu correo y te mostramos cómo continuar.'}
+        {pidiendoCorreo && 'Ingresa tu correo para continuar.'}
+        {pidiendoNuevaContrasena && 'Elige tu nueva contraseña.'}
       </p>
 
       <div className="ts-wizard-card">
-        {modo === 'olvide' && resultadoOlvide ? (
+        {contrasenaRestablecida ? (
+          <div>
+            <div className="alert alert-success small py-2" role="status">
+              <i className="bi bi-check-circle me-1"></i>
+              Contraseña actualizada. Ya puedes iniciar sesión.
+            </div>
+            <button type="button" className="btn btn-ts-primary w-100" onClick={() => cambiarModo('login')}>
+              Ir a iniciar sesión
+            </button>
+          </div>
+        ) : sinCuentaParaEseCorreo ? (
           <div>
             <div className="alert alert-success small py-2" role="status">
               <i className="bi bi-check-circle me-1"></i>
               {resultadoOlvide.mensaje}
             </div>
-            {resultadoOlvide.token && (
-              <>
-                <p className="small text-muted mb-2">
-                  Como este es un prototipo sin envío real de correos, aquí tienes tu enlace (vence en 30
-                  minutos):
-                </p>
-                <Link
-                  to={`/restablecer-contrasena?token=${encodeURIComponent(resultadoOlvide.token)}`}
-                  className="btn btn-ts-primary w-100"
-                >
-                  Continuar con el restablecimiento
-                </Link>
-              </>
-            )}
             <p className="text-center small text-muted mt-3 mb-0">
               <button type="button" className="btn btn-link p-0 align-baseline" onClick={() => cambiarModo('login')}>
                 Volver a iniciar sesión
@@ -121,22 +136,24 @@ function Login() {
               </div>
             )}
 
-            <div className="mb-3">
-              <label htmlFor="correo" className="form-label fw-semibold">
-                Correo
-              </label>
-              <input
-                id="correo"
-                type="email"
-                className="form-control"
-                value={form.correo}
-                onChange={(evento) => actualizarCampo('correo', evento.target.value)}
-                required
-                autoComplete="email"
-              />
-            </div>
+            {(modo === 'login' || modo === 'registro' || pidiendoCorreo) && (
+              <div className="mb-3">
+                <label htmlFor="correo" className="form-label fw-semibold">
+                  Correo
+                </label>
+                <input
+                  id="correo"
+                  type="email"
+                  className="form-control"
+                  value={form.correo}
+                  onChange={(evento) => actualizarCampo('correo', evento.target.value)}
+                  required
+                  autoComplete="email"
+                />
+              </div>
+            )}
 
-            {modo !== 'olvide' && (
+            {(modo === 'login' || modo === 'registro') && (
               <CampoContrasena
                 id="contrasena"
                 label="Contraseña"
@@ -146,6 +163,28 @@ function Login() {
                 autoComplete={modo === 'login' ? 'current-password' : 'new-password'}
                 helpText={modo === 'registro' ? 'Mínimo 8 caracteres.' : null}
               />
+            )}
+
+            {pidiendoNuevaContrasena && (
+              <>
+                <CampoContrasena
+                  id="nueva_contrasena"
+                  label="Nueva contraseña"
+                  value={nuevaContrasena}
+                  onChange={(evento) => setNuevaContrasena(evento.target.value)}
+                  minLength={8}
+                  autoComplete="new-password"
+                  helpText="Mínimo 8 caracteres."
+                />
+                <CampoContrasena
+                  id="confirmacion_contrasena"
+                  label="Confirma la nueva contraseña"
+                  value={confirmacion}
+                  onChange={(evento) => setConfirmacion(evento.target.value)}
+                  minLength={8}
+                  autoComplete="new-password"
+                />
+              </>
             )}
 
             {modo === 'login' && (
@@ -173,20 +212,22 @@ function Login() {
                   <span className="spinner-border spinner-border-sm me-2" role="status"></span>
                   {modo === 'login' && 'Ingresando...'}
                   {modo === 'registro' && 'Creando cuenta...'}
-                  {modo === 'olvide' && 'Enviando...'}
+                  {pidiendoCorreo && 'Enviando...'}
+                  {pidiendoNuevaContrasena && 'Guardando...'}
                 </>
               ) : (
                 <>
                   {modo === 'login' && 'Ingresar'}
                   {modo === 'registro' && 'Crear cuenta'}
-                  {modo === 'olvide' && 'Continuar'}
+                  {pidiendoCorreo && 'Continuar'}
+                  {pidiendoNuevaContrasena && 'Guardar nueva contraseña'}
                 </>
               )}
             </button>
           </form>
         )}
 
-        {!resultadoOlvide && (
+        {!resultadoOlvide && !contrasenaRestablecida && (
           <p className="text-center small text-muted mt-3 mb-0">
             {modo === 'login' && (
               <>
