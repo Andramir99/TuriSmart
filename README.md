@@ -58,3 +58,4 @@ Etapa 4-5 para el backend y la base de datos.)
 14. Entrenar y evaluar Machine Learning
 15. Integrar el modelo con FastAPI
 16. Pruebas, documentación y despliegue
+# TuriSmart
