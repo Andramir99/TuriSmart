@@ -26,3 +26,11 @@ export function restablecerContrasena(token, nuevaContrasena) {
     cuerpo: { token, nueva_contrasena: nuevaContrasena },
   })
 }
+
+export function cambiarContrasena(contrasenaActual, nuevaContrasena, token) {
+  return solicitar('/usuarios/me/contrasena', {
+    metodo: 'PUT',
+    cuerpo: { contrasena_actual: contrasenaActual, nueva_contrasena: nuevaContrasena },
+    token,
+  })
+}

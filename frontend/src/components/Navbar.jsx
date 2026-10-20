@@ -95,12 +95,19 @@ function Navbar() {
 
             {autenticado ? (
               <div className="d-flex align-items-center gap-2">
-                <span className="ts-user-icon" id="tour-cuenta" aria-hidden="true">
-                  <i className="bi bi-person-fill"></i>
-                </span>
-                <span className="small fw-semibold text-truncate" style={{ maxWidth: '120px' }}>
-                  {usuario.nombre.split(' ')[0]}
-                </span>
+                <Link
+                  to="/mi-cuenta"
+                  className="d-flex align-items-center gap-2 text-decoration-none text-reset"
+                  id="tour-cuenta"
+                  title="Mi cuenta"
+                >
+                  <span className="ts-user-icon" aria-hidden="true">
+                    <i className="bi bi-person-fill"></i>
+                  </span>
+                  <span className="small fw-semibold text-truncate" style={{ maxWidth: '120px' }}>
+                    {usuario.nombre.split(' ')[0]}
+                  </span>
+                </Link>
                 {esAdmin && <span className="badge ts-badge-admin">Admin</span>}
                 <button
                   type="button"

@@ -63,5 +63,14 @@ class RestablecerContrasenaEntrada(BaseModel):
     nueva_contrasena: str = Field(min_length=8, max_length=72)
 
 
+class CambiarContrasenaEntrada(BaseModel):
+    # A diferencia de olvide/restablecer (para quien no puede iniciar
+    # sesión), esta es para un usuario YA autenticado que quiere cambiar
+    # su contraseña desde su cuenta: pedirle también la actual evita que
+    # una sesión robada o dejada abierta baste para tomar la cuenta.
+    contrasena_actual: str
+    nueva_contrasena: str = Field(min_length=8, max_length=72)
+
+
 class MensajeRespuesta(BaseModel):
     mensaje: str
