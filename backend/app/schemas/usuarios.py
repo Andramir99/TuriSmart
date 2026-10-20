@@ -42,3 +42,26 @@ class UsuarioPublico(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class OlvideContrasenaEntrada(BaseModel):
+    correo: EmailStr
+
+
+class OlvideContrasenaRespuesta(BaseModel):
+    mensaje: str
+    # Modo prototipo: el proyecto no tiene un servidor de correo
+    # configurado (ver README), así que en vez de enviarse por email el
+    # enlace de restablecimiento se devuelve acá mismo para que el
+    # frontend lo muestre en pantalla. None cuando el correo no existe
+    # (no se revela si una cuenta existe o no).
+    token: str | None = None
+
+
+class RestablecerContrasenaEntrada(BaseModel):
+    token: str
+    nueva_contrasena: str = Field(min_length=8, max_length=72)
+
+
+class MensajeRespuesta(BaseModel):
+    mensaje: str

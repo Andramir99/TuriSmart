@@ -15,3 +15,14 @@ export function obtenerPerfil(token) {
 export function actualizarPerfil(datos, token) {
   return solicitar('/usuarios/me', { metodo: 'PUT', cuerpo: datos, token })
 }
+
+export function solicitarRestablecimiento(correo) {
+  return solicitar('/auth/olvide-contrasena', { metodo: 'POST', cuerpo: { correo } })
+}
+
+export function restablecerContrasena(token, nuevaContrasena) {
+  return solicitar('/auth/restablecer-contrasena', {
+    metodo: 'POST',
+    cuerpo: { token, nueva_contrasena: nuevaContrasena },
+  })
+}

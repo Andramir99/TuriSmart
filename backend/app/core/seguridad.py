@@ -44,6 +44,32 @@ def crear_token_acceso(usuario_id: int, correo: str) -> str:
     return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algoritmo)
 
 
+TIPO_TOKEN_RESTABLECIMIENTO = "restablecer_contrasena"
+MINUTOS_VALIDEZ_RESTABLECIMIENTO = 30
+
+
+def crear_token_restablecimiento(usuario_id: int, huella_contrasena_actual: str) -> str:
+    """Token de un solo propósito (restablecer la contraseña), distinto
+    del de sesión: dura mucho menos (30 min, no 1 día) y "tipo" en el
+    payload evita que alguien use un token de sesión normal robado para
+    entrar al endpoint de restablecimiento, o viceversa.
+
+    "cf" (contraseña_hash, en el momento de pedir el restablecimiento)
+    es lo que lo vuelve de un solo uso pese a ser un JWT sin estado en
+    el servidor: en cuanto el restablecimiento se complete una vez, el
+    hash de la contraseña cambia, así que ese mismo token ya no coincide
+    la segunda vez (ver restablecer_contrasena en app/api/auth.py).
+    """
+    expira = datetime.now(timezone.utc) + timedelta(minutes=MINUTOS_VALIDEZ_RESTABLECIMIENTO)
+    payload = {
+        "sub": str(usuario_id),
+        "tipo": TIPO_TOKEN_RESTABLECIMIENTO,
+        "cf": huella_contrasena_actual,
+        "exp": expira,
+    }
+    return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algoritmo)
+
+
 def decodificar_token(token: str) -> dict:
     """Verifica la firma y la expiración de un token y devuelve su payload.
 

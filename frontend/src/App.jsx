@@ -12,6 +12,7 @@ import ItinerarioDetalle from './pages/ItinerarioDetalle.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Planificar from './pages/Planificar.jsx'
 import Login from './pages/Login.jsx'
+import RestablecerContrasena from './pages/RestablecerContrasena.jsx'
 import Privacidad from './pages/Privacidad.jsx'
 import AdminPanel from './pages/AdminPanel.jsx'
 import AdminLugares from './pages/AdminLugares.jsx'
@@ -54,6 +55,7 @@ function App() {
           />
           <Route path="/planificar" element={<Planificar />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/restablecer-contrasena" element={<RestablecerContrasena />} />
           <Route
             path="/admin"
             element={

@@ -34,6 +34,11 @@ def crear_usuario(db: Session, datos: UsuarioRegistro) -> Usuario:
     return usuario
 
 
+def establecer_nueva_contrasena(db: Session, usuario: Usuario, nueva_contrasena: str) -> None:
+    usuario.contrasena_hash = hash_contrasena(nueva_contrasena)
+    db.commit()
+
+
 def autenticar_usuario(db: Session, correo: str, contrasena: str) -> Usuario | None:
     """Devuelve el usuario si el correo existe y la contraseña es correcta.
     Devuelve None en cualquier otro caso (correo inexistente, contraseña
