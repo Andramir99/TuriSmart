@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import { ApiError } from '../services/api.js'
 import { obtenerCategorias } from '../services/categoriasService.js'
@@ -92,6 +93,7 @@ function formularioACuerpo(form) {
 
 function AdminLugares() {
   const { usuario, token } = useAuth()
+  const ubicacion = useLocation()
 
   const [categorias, setCategorias] = useState([])
   const [lugares, setLugares] = useState([])
@@ -134,6 +136,22 @@ function AdminLugares() {
     setEditandoId(null)
     setForm((actual) => ({ ...FORM_VACIO, categoria_id: actual.categoria_id }))
   }
+
+  // El navbar de administrador enlaza directo a #admin-agregar y
+  // #admin-catalogo (dos secciones de esta misma página, no rutas
+  // distintas). "Agregar lugar" además limpia cualquier edición en
+  // curso, para que de verdad abra un formulario en blanco.
+  useEffect(() => {
+    if (!ubicacion.hash || cargando) return
+
+    if (ubicacion.hash === '#admin-agregar' && editandoId) {
+      cancelarEdicion()
+    }
+
+    const elemento = document.querySelector(ubicacion.hash)
+    elemento?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ubicacion.hash, cargando])
 
   async function manejarSubmit(evento) {
     evento.preventDefault()
@@ -205,7 +223,7 @@ function AdminLugares() {
       )}
 
       <div className="row g-4">
-        <div className="col-lg-5">
+        <div className="col-lg-5" id="admin-agregar" style={{ scrollMarginTop: '90px' }}>
           <div className="ts-wizard-card">
             <h2 className="h5 fw-bold mb-3">{editandoId ? 'Editar lugar' : 'Agregar lugar nuevo'}</h2>
 
@@ -458,7 +476,7 @@ function AdminLugares() {
           </div>
         </div>
 
-        <div className="col-lg-7">
+        <div className="col-lg-7" id="admin-catalogo" style={{ scrollMarginTop: '90px' }}>
           <h2 className="h5 fw-bold mb-3">Lugares en el catálogo ({lugares.length})</h2>
           <div className="d-flex flex-column gap-2">
             {lugares.map((lugar) => (

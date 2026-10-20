@@ -88,12 +88,42 @@ h3,
   height: 38px;
   border-radius: 50%;
   border: 1px solid var(--ts-border);
+  background-color: var(--ts-bg);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--ts-text);
+  color: var(--ts-primary);
+  font-size: 1.05rem;
   text-decoration: none;
   flex-shrink: 0;
+}
+
+/* Botón "Ingresar" cuando no hay sesión iniciada: antes era un círculo
+   con solo un borde fino sobre fondo blanco (casi invisible junto al
+   botón sólido "Planifica tu viaje"); ahora es un botón con relleno
+   propio, para que se note que ahí se inicia sesión. */
+.btn-ts-outline {
+  border: 1px solid var(--ts-border);
+  background-color: var(--ts-bg);
+  color: var(--ts-text);
+  font-weight: 500;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-ts-outline:hover {
+  background-color: #fff;
+  border-color: var(--ts-primary);
+  color: var(--ts-primary);
+}
+
+.ts-badge-admin {
+  background-color: var(--ts-primary);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  vertical-align: middle;
 }
 
 /* ---- Botones de marca ---- */
