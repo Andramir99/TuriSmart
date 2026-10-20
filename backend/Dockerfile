@@ -22,9 +22,14 @@ COPY scripts ./scripts
 
 EXPOSE 8000
 
-# Al arrancar: aplica las migraciones pendientes y siembra el catálogo
-# inicial (scripts/02_sembrar_datos_iniciales.py es idempotente — no
-# duplica nada si ya se sembró antes), recién ahí levanta el servidor.
-# Así "docker compose up" sobre una base de datos nueva deja la
-# plataforma lista para usar, no solo corriendo y vacía.
-CMD ["sh", "-c", "alembic upgrade head && python scripts/02_sembrar_datos_iniciales.py && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# Al arrancar: activa PostGIS si hiciera falta (una base administrada
+# como la de Render la entrega vacía; ver scripts/00_...), aplica las
+# migraciones pendientes y siembra el catálogo inicial
+# (scripts/02_sembrar_datos_iniciales.py es idempotente — no duplica
+# nada si ya se sembró antes), recién ahí levanta el servidor. Así el
+# contenedor deja la plataforma lista para usar, no solo corriendo y
+# vacía.
+#
+# ${PORT:-8000}: Render asigna el puerto a través de la variable PORT;
+# en Docker Compose local esa variable no existe, así que se usa 8000.
+CMD ["sh", "-c", "python scripts/00_preparar_extension_postgis.py && alembic upgrade head && python scripts/02_sembrar_datos_iniciales.py && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

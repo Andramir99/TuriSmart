@@ -1,0 +1,57 @@
+# Blueprint de Render: despliega TuriSmart Lima completo (base de datos,
+# backend y frontend) en un solo paso.
+#
+# Uso: en Render, "New +" -> "Blueprint" -> conecta este repositorio ->
+# Render detecta este archivo automáticamente y propone crear los 3
+# recursos de abajo. Antes de confirmar, revisa los planes (están en
+# "free" para no generar costo; el free de PostgreSQL expira a los 30
+# días y hay que subirlo de plan o recrearlo para seguir usándolo).
+databases:
+  - name: turismart-db
+    plan: free
+    postgresMajorVersion: "16"
+
+services:
+  - type: web
+    name: turismart-backend
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /salud
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: turismart-db
+          property: connectionString
+      - key: CORS_ORIGINS
+        fromService:
+          type: web
+          name: turismart-frontend
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ALGORITMO
+        value: HS256
+      - key: JWT_EXPIRA_MINUTOS
+        value: "1440"
+
+  - type: web
+    name: turismart-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: turismart-backend
+          envVarKey: RENDER_EXTERNAL_URL
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

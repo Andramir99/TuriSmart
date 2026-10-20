@@ -17,6 +17,7 @@ Trabajo de Investigación — Ingeniería de Computación y Sistemas, USMP.
   - [Opción A: con Docker (recomendada)](#opción-a-con-docker-recomendada)
   - [Opción B: entorno local manual](#opción-b-entorno-local-manual)
 - [Variables de entorno](#variables-de-entorno)
+- [Despliegue en Render](#despliegue-en-render)
 - [Documentación de la API](#documentación-de-la-api)
 - [Pipeline de Machine Learning](#pipeline-de-machine-learning)
 - [Pruebas](#pruebas)
@@ -178,6 +179,35 @@ npm run dev
 
 **`.env`** en la raíz (ver `.env.example`): variables usadas solo por `docker-compose.yml`
 (`POSTGRES_PASSWORD`, `JWT_SECRET_KEY`, `FRONTEND_URL`, `VITE_API_URL`).
+
+## Despliegue en Render
+
+El archivo `render.yaml` en la raíz define un Blueprint: los 3 recursos
+(base de datos, backend y frontend) se crean juntos, ya conectados
+entre sí, en un solo paso.
+
+1. Sube el repositorio a GitHub (si no lo está ya).
+2. En [Render](https://dashboard.render.com), **New +** → **Blueprint**
+   y selecciona el repositorio. Render detecta `render.yaml` solo.
+3. Revisa los recursos propuestos (`turismart-db`, `turismart-backend`,
+   `turismart-frontend`, los 3 en plan `free`) y confirma con **Apply**.
+4. Espera a que los 3 terminen de desplegar (el backend tarda un poco
+   más: activa PostGIS, aplica migraciones y siembra el catálogo). La
+   URL pública del frontend queda en el panel de `turismart-frontend`.
+
+Variables como `DATABASE_URL`, `CORS_ORIGINS`, `VITE_API_URL` y
+`JWT_SECRET_KEY` se completan solas (el Blueprint las conecta entre
+servicios o genera un valor aleatorio); no hay que tocar nada a mano.
+
+Limitaciones del plan gratuito a tener en cuenta para la sustentación:
+
+- La base de datos **free** expira 30 días después de creada. Si la
+  demo es más adelante, créala unos días antes o sube ese recurso a un
+  plan pago (`plan: starter` o similar) desde el dashboard.
+- Los web services **free** "duermen" tras ~15 minutos sin tráfico; la
+  primera visita después de eso tarda unos segundos en responder
+  mientras despierta. Para la demo en vivo, abre el sitio un par de
+  minutos antes para que ya esté despierto.
 
 ## Documentación de la API
 
