@@ -20,3 +20,17 @@ export function obtenerLugares({ categoria, distrito, q, lat, lon, radioKm } = {
 export function obtenerLugarPorId(id) {
   return solicitar(`/lugares/${id}`)
 }
+
+// --- Administración del catálogo (requieren una cuenta con rol "admin") ---
+
+export function crearLugar(datos, token) {
+  return solicitar('/lugares', { metodo: 'POST', cuerpo: datos, token })
+}
+
+export function actualizarLugar(id, datos, token) {
+  return solicitar(`/lugares/${id}`, { metodo: 'PUT', cuerpo: datos, token })
+}
+
+export function eliminarLugar(id, token) {
+  return solicitar(`/lugares/${id}`, { metodo: 'DELETE', token })
+}

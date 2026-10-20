@@ -66,6 +66,13 @@ function Navbar() {
                 <i className="bi bi-bar-chart-line"></i> Dashboard
               </NavLink>
             </li>
+            {usuario?.rol === 'admin' && (
+              <li className="nav-item">
+                <NavLink to="/admin/lugares" className={navLinkClass}>
+                  <i className="bi bi-shield-lock"></i> Administrar
+                </NavLink>
+              </li>
+            )}
           </ul>
 
           <div className="d-flex align-items-center gap-3 mt-3 mt-lg-0">

@@ -57,6 +57,20 @@ def obtener_usuario_actual(
     return usuario
 
 
+def obtener_usuario_admin(usuario: Usuario = Depends(obtener_usuario_actual)) -> Usuario:
+    """Protege rutas de administración (ej. gestionar el catálogo de
+    lugares): exige sesión válida (obtener_usuario_actual) Y que el rol
+    de esa cuenta sea "admin". Un turista autenticado recibe 403, no 401
+    — su sesión es válida, simplemente no tiene permiso para esto.
+    """
+    if usuario.rol != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Esta acción requiere una cuenta de administrador",
+        )
+    return usuario
+
+
 def obtener_usuario_opcional(
     token: str | None = Depends(oauth2_scheme_opcional),
     db: Session = Depends(get_db),

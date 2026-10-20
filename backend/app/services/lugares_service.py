@@ -1,8 +1,10 @@
+from geoalchemy2.elements import WKTElement
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.categorias import Categoria
 from app.models.lugares import Lugar
+from app.schemas.lugares import LugarActualizar, LugarCrear
 
 # Para que una búsqueda de texto libre ("museos", "playa cerca") también
 # alimente el perfil dinámico (Etapa 16) aunque el usuario no haga clic en
@@ -75,3 +77,52 @@ def obtener_por_id(db: Session, lugar_id: int) -> Lugar | None:
         .filter(Lugar.id == lugar_id, Lugar.activo.is_(True))
         .first()
     )
+
+
+def crear(db: Session, datos: LugarCrear) -> Lugar:
+    lugar = Lugar(
+        **datos.model_dump(exclude={"lat", "lon"}),
+        ubicacion=WKTElement(f"POINT({datos.lon} {datos.lat})", srid=4326),
+    )
+    db.add(lugar)
+    db.commit()
+    db.refresh(lugar)
+    return obtener_por_id(db, lugar.id)
+
+
+def actualizar(db: Session, lugar_id: int, datos: LugarActualizar) -> Lugar | None:
+    lugar = obtener_por_id(db, lugar_id)
+    if lugar is None:
+        return None
+
+    cambios = datos.model_dump(exclude_unset=True, exclude={"lat", "lon"})
+    for campo, valor in cambios.items():
+        setattr(lugar, campo, valor)
+
+    # lat/lon viajan sueltos en el esquema, pero en la tabla son una sola
+    # columna Geography — si llega cualquiera de los dos, hay que
+    # recalcular el punto completo (no se puede actualizar solo un eje).
+    if datos.lat is not None or datos.lon is not None:
+        lugar.ubicacion = WKTElement(
+            f"POINT({datos.lon if datos.lon is not None else lugar.lon} "
+            f"{datos.lat if datos.lat is not None else lugar.lat})",
+            srid=4326,
+        )
+
+    db.commit()
+    db.refresh(lugar)
+    return obtener_por_id(db, lugar.id)
+
+
+def eliminar(db: Session, lugar_id: int) -> bool:
+    """Baja lógica: pone activo=False en vez de borrar la fila, para no
+    romper itinerarios, valoraciones e interacciones que ya referencian
+    este lugar. listar()/obtener_por_id() ya filtran por activo=True, así
+    que deja de aparecer en el catálogo de inmediato.
+    """
+    lugar = db.query(Lugar).filter(Lugar.id == lugar_id).first()
+    if lugar is None:
+        return False
+    lugar.activo = False
+    db.commit()
+    return True

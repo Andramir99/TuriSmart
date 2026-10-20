@@ -5,11 +5,11 @@ Reemplaza a src/data/destinosMock.js del frontend (Etapa 3).
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencias import obtener_usuario_opcional
+from app.api.dependencias import obtener_usuario_admin, obtener_usuario_opcional
 from app.database.conexion import get_db
 from app.models.usuarios import Usuario
 from app.schemas.interacciones import InteraccionEntrada
-from app.schemas.lugares import LugarPublico
+from app.schemas.lugares import LugarActualizar, LugarCrear, LugarPublico
 from app.services import interacciones_service, lugares_service
 
 router = APIRouter(prefix="/lugares", tags=["Lugares"])
@@ -67,3 +67,38 @@ def ver_lugar(lugar_id: int, db: Session = Depends(get_db)):
     if lugar is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lugar no encontrado")
     return lugar
+
+
+# --- Administración del catálogo: solo cuentas con rol "admin" ----------
+
+
+@router.post("", response_model=LugarPublico, status_code=status.HTTP_201_CREATED)
+def crear_lugar(
+    datos: LugarCrear,
+    _admin: Usuario = Depends(obtener_usuario_admin),
+    db: Session = Depends(get_db),
+):
+    return lugares_service.crear(db, datos)
+
+
+@router.put("/{lugar_id}", response_model=LugarPublico)
+def actualizar_lugar(
+    lugar_id: int,
+    datos: LugarActualizar,
+    _admin: Usuario = Depends(obtener_usuario_admin),
+    db: Session = Depends(get_db),
+):
+    lugar = lugares_service.actualizar(db, lugar_id, datos)
+    if lugar is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lugar no encontrado")
+    return lugar
+
+
+@router.delete("/{lugar_id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_lugar(
+    lugar_id: int,
+    _admin: Usuario = Depends(obtener_usuario_admin),
+    db: Session = Depends(get_db),
+):
+    if not lugares_service.eliminar(db, lugar_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lugar no encontrado")

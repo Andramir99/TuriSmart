@@ -25,8 +25,17 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from geoalchemy2.elements import WKTElement  # noqa: E402
 
+from app.core.seguridad import hash_contrasena  # noqa: E402
 from app.database.conexion import SessionLocal  # noqa: E402
-from app.models import Categoria, Lugar  # noqa: E402
+from app.models import Categoria, Lugar, Usuario  # noqa: E402
+
+# Cuenta administradora de la plataforma: gestiona el catálogo de
+# lugares (POST/PUT/DELETE /lugares, protegidos con obtener_usuario_admin).
+# Se siembra acá, no por registro normal, porque POST /auth/registro
+# siempre crea cuentas con rol "turista" (ver schemas/usuarios.py) — no
+# hay forma de volverse admin desde la propia app, a propósito.
+CORREO_ADMIN = "admin@turismart.pe"
+CONTRASENA_ADMIN_INICIAL = "TuriSmartAdmin2026"
 
 CATEGORIAS = [
     {"slug": "cultural", "nombre": "Cultura & Historia", "descripcion": "Museos, plazas y arquitectura colonial", "icono": "bi-bank"},
@@ -526,6 +535,20 @@ def sembrar():
 
         db.commit()
         print(f"Lugares nuevos creados: {creados} / actualizados: {actualizados} (de {len(LUGARES)} en la lista)")
+
+        admin = db.query(Usuario).filter_by(correo=CORREO_ADMIN).first()
+        if admin is None:
+            admin = Usuario(
+                nombre="Administrador TuriSmart",
+                correo=CORREO_ADMIN,
+                contrasena_hash=hash_contrasena(CONTRASENA_ADMIN_INICIAL),
+                rol="admin",
+            )
+            db.add(admin)
+            db.commit()
+            print(f"Cuenta administradora creada: {CORREO_ADMIN}")
+        else:
+            print("Cuenta administradora ya existía.")
     finally:
         db.close()
 
