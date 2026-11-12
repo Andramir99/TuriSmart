@@ -15,11 +15,16 @@ si todavía no hay ningún modelo activo.
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencias import obtener_usuario_actual, obtener_usuario_opcional
+from app.api.dependencias import obtener_usuario_actual, obtener_usuario_admin, obtener_usuario_opcional
 from app.database.conexion import get_db
 from app.models.usuarios import Usuario
 from app.schemas.recomendaciones import ModeloActivoPublico, RecomendacionEntrada, RecomendacionPublica
-from app.services import recomendaciones_hibrido_service, recomendaciones_ml_service, recomendaciones_service
+from app.services import (
+    recomendaciones_hibrido_service,
+    recomendaciones_ml_service,
+    recomendaciones_service,
+    reentrenamiento_service,
+)
 
 router = APIRouter(prefix="/recomendaciones", tags=["Recomendaciones"])
 
@@ -62,3 +67,23 @@ def recomendaciones_para_ti(
     para no mostrar siempre la misma categoría.
     """
     return recomendaciones_hibrido_service.generar_recomendaciones_para_ti(db, usuario.id, cantidad=cantidad)
+
+
+@router.post("/reentrenar")
+def reentrenar_modelo_ml(
+    forzar: bool = False,
+    usuario: Usuario = Depends(obtener_usuario_admin),
+    db: Session = Depends(get_db),
+):
+    """Reentrenamiento automático del modelo KNN (Objetivo Específico 2).
+
+    Sin `forzar`, solo entrena si ya se acumularon suficientes
+    valoraciones reales nuevas desde el último entrenamiento activo (ver
+    reentrenamiento_service.UMBRAL_VALORACIONES_NUEVAS); con
+    `forzar=true` entrena de inmediato, para poder demostrarlo o
+    probarlo sin esperar a acumular datos. Un job en segundo plano (ver
+    app/main.py) llama a este mismo servicio sin `forzar` de forma
+    periódica, para que el reentrenamiento ocurra solo, sin que un
+    administrador tenga que accionarlo.
+    """
+    return reentrenamiento_service.reentrenar_si_corresponde(db, forzar=forzar)

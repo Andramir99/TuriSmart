@@ -6,6 +6,10 @@ auth, usuarios, lugares, itinerarios, etc.).
 Se ejecuta con:  uvicorn app.main:app --reload   (desde la carpeta backend/)
 """
 
+import asyncio
+import contextlib
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -25,10 +29,42 @@ from app.api import (
     valoraciones,
 )
 from app.core.config import get_settings
+from app.database.conexion import SessionLocal
+from app.services import reentrenamiento_service
 
 settings = get_settings()
+logger = logging.getLogger("turismart.reentrenamiento")
 
-app = FastAPI(title=settings.app_name)
+# Cada cuántas horas se revisa si corresponde reentrenar el modelo KNN de
+# forma automática (Objetivo Específico 2). No reentrena siempre que
+# corre: solo si ya hay suficientes valoraciones reales nuevas desde el
+# último entrenamiento activo (ver reentrenamiento_service).
+INTERVALO_REENTRENAMIENTO_HORAS = 24
+
+
+async def _ciclo_reentrenamiento_automatico() -> None:
+    while True:
+        await asyncio.sleep(INTERVALO_REENTRENAMIENTO_HORAS * 60 * 60)
+        db = SessionLocal()
+        try:
+            resultado = reentrenamiento_service.reentrenar_si_corresponde(db)
+            logger.info("Revisión de reentrenamiento automático: %s", resultado)
+        except Exception:
+            logger.exception("Falló la revisión de reentrenamiento automático")
+        finally:
+            db.close()
+
+
+@contextlib.asynccontextmanager
+async def ciclo_de_vida(app: FastAPI):
+    tarea = asyncio.create_task(_ciclo_reentrenamiento_automatico())
+    yield
+    tarea.cancel()
+    with contextlib.suppress(asyncio.CancelledError):
+        await tarea
+
+
+app = FastAPI(title=settings.app_name, lifespan=ciclo_de_vida)
 
 # CORS: por defecto, un navegador bloquea que una página en localhost:5173
 # (el frontend de React) llame a una API en localhost:8000 (este backend).
