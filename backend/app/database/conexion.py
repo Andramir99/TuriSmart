@@ -27,7 +27,11 @@ settings = get_settings()
 # decodificarse mal en algunos procesos y bien en otros — el mismo dato,
 # mostrado distinto según cómo se haya lanzado uvicorn.
 engine = create_engine(
-    settings.database_url, pool_pre_ping=True, connect_args={"client_encoding": "utf8"}
+    settings.database_url,
+    pool_pre_ping=True,
+    pool_size=20,
+    max_overflow=20,
+    connect_args={"client_encoding": "utf8"},
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

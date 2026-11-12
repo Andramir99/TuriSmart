@@ -9,7 +9,7 @@ que construir); para usuarios nuevos sigue siendo necesario
 POST /recomendaciones (reglas).
 """
 
-from functools import lru_cache
+import threading
 
 import joblib
 from sqlalchemy.orm import Session
@@ -21,6 +21,9 @@ from app.services import lugares_service
 
 PUNTUACION_MINIMA_PARA_PERFIL = 4
 
+_bloqueo_carga_modelo = threading.Lock()
+_cache_modelo: dict[str, dict] = {}
+
 
 def _obtener_modelo_activo(db: Session) -> ModeloML | None:
     return (
@@ -31,12 +34,24 @@ def _obtener_modelo_activo(db: Session) -> ModeloML | None:
     )
 
 
-@lru_cache(maxsize=2)
 def _cargar_datos_modelo(ruta_archivo: str) -> dict:
-    # lru_cache evita releer el archivo .joblib del disco en cada
-    # request — se carga una vez por ruta y se reutiliza en memoria.
-    # Si se activa un modelo con una ruta distinta, se cachea aparte.
-    return joblib.load(ruta_archivo)
+    # Evita releer el archivo .joblib del disco en cada request — se
+    # carga una vez por ruta y se reutiliza en memoria. El candado evita
+    # que, con muchos usuarios concurrentes pidiendo recomendaciones por
+    # primera vez (visto en la prueba de carga con 50 usuarios), varios
+    # hilos entren a la vez antes de que el caché quede listo y cada uno
+    # repita la carga del disco en paralelo, multiplicando el uso de CPU
+    # justo en ese instante. Con el candado, solo el primer hilo carga de
+    # verdad; los demás esperan y reciben el resultado ya cacheado.
+    datos = _cache_modelo.get(ruta_archivo)
+    if datos is not None:
+        return datos
+    with _bloqueo_carga_modelo:
+        datos = _cache_modelo.get(ruta_archivo)
+        if datos is None:
+            datos = joblib.load(ruta_archivo)
+            _cache_modelo[ruta_archivo] = datos
+        return datos
 
 
 def obtener_info_modelo_activo(db: Session) -> ModeloML | None:
