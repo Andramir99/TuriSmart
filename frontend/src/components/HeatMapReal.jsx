@@ -41,7 +41,15 @@ function HeatMapReal({ puntos }) {
       zoomControl={false}
       attributionControl={false}
     >
-      <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+      {/* Mismo tile de OpenStreetMap que el Mapa GIS, con el filtro "claro"
+          (ver .ts-tiles-claro en mapa.css): CartoDB exige API key y
+          Wikimedia Maps bloquea el hotlinking, así que se evita depender
+          de un proveedor de tiles aparte. */}
+      <TileLayer
+        className="ts-tiles-claro"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
       <CapaDeCalor puntos={puntos} />
     </MapContainer>
   )

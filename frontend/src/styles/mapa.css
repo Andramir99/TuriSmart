@@ -1,5 +1,8 @@
 /* Estilos exclusivos de la pantalla Mapa GIS. */
 
+/* .ts-tiles-claro / .ts-tiles-oscuro (filtros de tiles Leaflet) viven en
+   global.css: las usan tanto este mapa como el mapa de calor del Dashboard. */
+
 .ts-mapa-layout {
   display: flex;
   flex-wrap: wrap;

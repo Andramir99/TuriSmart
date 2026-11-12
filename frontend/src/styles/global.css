@@ -2,6 +2,18 @@
    Lima como nunca antes" o "Dashboard"), Inter para el resto de la interfaz. */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
 
+/* Filtros de tiles Leaflet (Mapa GIS y mapa de calor del Dashboard):
+   reutilizan el mismo tile de OpenStreetMap y lo diferencian solo con CSS,
+   en vez de depender de un proveedor de tiles "claro"/"oscuro" aparte
+   (CartoDB exige API key, Wikimedia Maps bloquea el hotlinking). */
+.ts-tiles-claro {
+  filter: grayscale(1) brightness(1.12) contrast(0.92);
+}
+
+.ts-tiles-oscuro {
+  filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
+}
+
 /* Paleta de marca extraída del Figma. Se ajustará con más precisión en la
    Etapa 3 al construir cada pantalla, pero ya deja el sistema de colores
    centralizado en un solo lugar (nada de colores sueltos en cada componente). */

@@ -59,16 +59,24 @@ function MapaLeaflet({ lugares, seleccionadoId, onSeleccionar, centrarEn, recorr
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
         </LayersControl.BaseLayer>
+        {/* "Claro" y "Oscuro": en vez de depender de un proveedor de tiles
+            alterno (los de CartoDB empezaron a exigir API key, y los de
+            Wikimedia Maps bloquean el uso fuera de sus propios sitios), se
+            reutiliza el mismo tile de OpenStreetMap ya confirmado estable y
+            se le aplica un filtro CSS — ver .ts-tiles-claro/.ts-tiles-oscuro
+            en mapa.css. Cero dependencia externa adicional. */}
         <LayersControl.BaseLayer name="Claro">
           <TileLayer
-            attribution='&copy; OpenStreetMap &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+            className="ts-tiles-claro"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
         </LayersControl.BaseLayer>
         <LayersControl.BaseLayer name="Oscuro">
           <TileLayer
-            attribution='&copy; OpenStreetMap &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            className="ts-tiles-oscuro"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
         </LayersControl.BaseLayer>
       </LayersControl>
