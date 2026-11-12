@@ -39,12 +39,28 @@ class ItinerarioReciente(BaseModel):
     fecha: date
 
 
+class PuntoCalor(BaseModel):
+    lat: float
+    lon: float
+    # 0-1, normalizada contra el lugar con más eventos reales — es lo que
+    # espera la capa de heatmap de Leaflet (leaflet.heat) como intensidad.
+    intensidad: float
+    nombre: str
+    total_eventos: int
+
+
+class MapaCalorPublico(BaseModel):
+    puntos: list[PuntoCalor]
+    datos_suficientes: bool
+
+
 class DashboardPublico(BaseModel):
     estadisticas: EstadisticasGenerales
     tendencia_semanal: TendenciaSemanal
     destinos_mas_vistos: list[DestinoPopular]
     metricas_tipo_grupo: list[MetricaTipoGrupo]
     itinerarios_recientes: list[ItinerarioReciente]
+    mapa_calor: MapaCalorPublico
     # Honestidad (no ocultar que la plataforma todavía tiene poco uso
     # real): el frontend muestra un aviso si esto es False, en vez de
     # dejar que un panel casi vacío parezca un error.

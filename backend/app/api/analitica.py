@@ -32,6 +32,7 @@ def ver_dashboard(
         destinos_mas_vistos=analitica_service.obtener_destinos_mas_vistos(db),
         metricas_tipo_grupo=analitica_service.obtener_metricas_tipo_grupo(db),
         itinerarios_recientes=analitica_service.obtener_itinerarios_recientes(db),
+        mapa_calor=analitica_service.obtener_mapa_calor(db),
         datos_suficientes=estadisticas["total_itinerarios"] >= MINIMO_ITINERARIOS_PARA_PANEL_CONFIABLE,
     )
 

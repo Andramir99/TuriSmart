@@ -3,7 +3,7 @@ import StatCard from '../components/StatCard.jsx'
 import LineChartConsultas from '../components/LineChartConsultas.jsx'
 import BarChartDestinos from '../components/BarChartDestinos.jsx'
 import MetricaBarra from '../components/MetricaBarra.jsx'
-import HeatMapMock from '../components/HeatMapMock.jsx'
+import HeatMapReal from '../components/HeatMapReal.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { obtenerDashboard } from '../services/analiticaService.js'
 import { formatearFechaCompleta, formatearFechaTabla } from '../utils/fechas.js'
@@ -146,8 +146,14 @@ function Dashboard() {
         <div className="col-12 col-lg-4">
           <div className="ts-chart-card">
             <h2 className="h6 mb-0">Flujos turísticos GIS</h2>
-            <p className="small text-muted mb-3">Mapa de calor ilustrativo — Lima Metropolitana</p>
-            <HeatMapMock />
+            {datos.mapa_calor.datos_suficientes ? (
+              <p className="small text-muted mb-3">Interacciones y valoraciones reales por lugar</p>
+            ) : (
+              <p className="small text-muted mb-3">
+                Uso real todavía bajo — el mapa ya usa datos reales, pero con pocos puntos.
+              </p>
+            )}
+            <HeatMapReal puntos={datos.mapa_calor.puntos} />
           </div>
         </div>
       </div>

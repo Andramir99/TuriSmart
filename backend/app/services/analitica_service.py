@@ -192,6 +192,69 @@ def obtener_itinerarios_recientes(db: Session, limite: int = 5) -> list[dict]:
     return resultados
 
 
+# Una valoración es una señal más fuerte de interés real que una
+# interacción suelta (clic, vista); por eso pesa más al combinar ambas
+# en un solo número de "eventos" por lugar para el mapa de calor.
+PESO_VALORACION_MAPA_CALOR = 3
+MINIMO_EVENTOS_PARA_MAPA_CALOR = 10
+
+
+def obtener_mapa_calor(db: Session) -> dict:
+    """Objetivo Específico 4 — mapa de calor real de flujos turísticos:
+    densidad de interacciones y valoraciones reales por lugar, sobre sus
+    coordenadas reales (PostGIS), en vez de la maqueta anterior con
+    posiciones e intensidades fijas (HeatMapMock.jsx).
+    """
+    conteo_interacciones = dict(
+        db.query(Interaccion.lugar_id, func.count(Interaccion.id))
+        .filter(Interaccion.lugar_id.isnot(None), Interaccion.es_sintetico.is_(False))
+        .group_by(Interaccion.lugar_id)
+        .all()
+    )
+    conteo_valoraciones = dict(
+        db.query(Valoracion.lugar_id, func.count(Valoracion.id))
+        .filter(Valoracion.lugar_id.isnot(None), Valoracion.es_sintetico.is_(False))
+        .group_by(Valoracion.lugar_id)
+        .all()
+    )
+
+    totales_por_lugar: dict[int, int] = {}
+    for lugar_id, cantidad in conteo_interacciones.items():
+        totales_por_lugar[lugar_id] = totales_por_lugar.get(lugar_id, 0) + cantidad
+    for lugar_id, cantidad in conteo_valoraciones.items():
+        totales_por_lugar[lugar_id] = (
+            totales_por_lugar.get(lugar_id, 0) + cantidad * PESO_VALORACION_MAPA_CALOR
+        )
+
+    if not totales_por_lugar:
+        return {"puntos": [], "datos_suficientes": False}
+
+    lugares = (
+        db.query(Lugar)
+        .filter(Lugar.id.in_(totales_por_lugar.keys()), Lugar.activo.is_(True))
+        .all()
+    )
+    maximo = max(totales_por_lugar.values()) or 1
+    total_eventos = sum(totales_por_lugar.values())
+
+    puntos = [
+        {
+            "lat": lugar.lat,
+            "lon": lugar.lon,
+            "intensidad": round(totales_por_lugar[lugar.id] / maximo, 4),
+            "nombre": lugar.nombre,
+            "total_eventos": totales_por_lugar[lugar.id],
+        }
+        for lugar in lugares
+    ]
+    puntos.sort(key=lambda p: p["total_eventos"], reverse=True)
+
+    return {
+        "puntos": puntos,
+        "datos_suficientes": total_eventos >= MINIMO_EVENTOS_PARA_MAPA_CALOR,
+    }
+
+
 # --- Panel general del administrador --------------------------------
 
 
