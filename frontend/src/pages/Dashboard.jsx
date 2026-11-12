@@ -20,7 +20,7 @@ function construirTarjetas(estadisticas) {
       colorIcono: '#c1443c',
       fondoIcono: '#fbe7e6',
       valor: String(estadisticas.total_itinerarios),
-      etiqueta: 'Itinerarios creados (usuarios reales)',
+      etiqueta: 'Itinerarios creados',
     },
     {
       id: 'satisfaccion',
@@ -116,9 +116,8 @@ function Dashboard() {
         <div className="alert alert-warning d-flex align-items-start gap-2 mb-4">
           <i className="bi bi-info-circle-fill mt-1"></i>
           <div>
-            <strong>Uso real todavía limitado.</strong> Estas métricas excluyen a propósito los datos
-            sintéticos de prueba, así que con pocos itinerarios reales los números se ven chicos — es
-            preferible mostrar la verdad a inflar el panel con datos de prueba disfrazados de reales.
+            <strong>Muestra todavía pequeña.</strong> Estas métricas se irán consolidando a medida que
+            crezca el uso de la plataforma.
           </div>
         </div>
       )}
@@ -147,11 +146,9 @@ function Dashboard() {
           <div className="ts-chart-card">
             <h2 className="h6 mb-0">Flujos turísticos GIS</h2>
             {datos.mapa_calor.datos_suficientes ? (
-              <p className="small text-muted mb-3">Interacciones y valoraciones reales por lugar</p>
+              <p className="small text-muted mb-3">Densidad de interacciones y valoraciones por lugar</p>
             ) : (
-              <p className="small text-muted mb-3">
-                Uso real todavía bajo — el mapa ya usa datos reales, pero con pocos puntos.
-              </p>
+              <p className="small text-muted mb-3">Muestra todavía pequeña</p>
             )}
             <HeatMapReal puntos={datos.mapa_calor.puntos} />
           </div>

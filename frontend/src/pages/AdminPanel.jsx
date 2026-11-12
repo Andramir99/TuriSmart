@@ -20,7 +20,7 @@ function construirTarjetas(m) {
       colorIcono: '#3355cc',
       fondoIcono: '#e8eefc',
       valor: String(m.total_usuarios),
-      etiqueta: 'Usuarios registrados (reales)',
+      etiqueta: 'Usuarios registrados',
     },
     {
       id: 'lugares',
@@ -37,7 +37,7 @@ function construirTarjetas(m) {
       colorIcono: '#2e7d32',
       fondoIcono: '#e6f4ea',
       valor: String(m.total_itinerarios),
-      etiqueta: 'Itinerarios creados (reales)',
+      etiqueta: 'Itinerarios creados',
     },
     {
       id: 'valoracion',
