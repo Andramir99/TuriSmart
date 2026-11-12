@@ -3,9 +3,14 @@ import StatCard from '../components/StatCard.jsx'
 import LineChartTendencia from '../components/LineChartTendencia.jsx'
 import BarChartCategorias from '../components/BarChartCategorias.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
-import { obtenerPanelAdmin } from '../services/analiticaService.js'
+import { obtenerEstadoModeloMl, obtenerPanelAdmin, reentrenarModeloMl } from '../services/analiticaService.js'
 import { ApiError } from '../services/api.js'
 import '../styles/dashboard.css'
+
+function formatearFecha(fechaIso) {
+  if (!fechaIso) return '—'
+  return new Date(fechaIso).toLocaleString('es-PE', { dateStyle: 'medium', timeStyle: 'short' })
+}
 
 function construirTarjetas(m) {
   return [
@@ -59,6 +64,16 @@ function AdminPanel() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
 
+  const [modelo, setModelo] = useState(null)
+  const [reentrenando, setReentrenando] = useState(false)
+  const [resultadoReentreno, setResultadoReentreno] = useState(null)
+
+  function cargarEstadoModelo() {
+    obtenerEstadoModeloMl(token)
+      .then(setModelo)
+      .catch(() => setModelo(null))
+  }
+
   useEffect(() => {
     if (!token) return
     setCargando(true)
@@ -67,7 +82,25 @@ function AdminPanel() {
       .then(setDatos)
       .catch((err) => setError(err instanceof ApiError ? err.message : 'No se pudo cargar el panel.'))
       .finally(() => setCargando(false))
+    cargarEstadoModelo()
   }, [token])
+
+  function reentrenarAhora() {
+    setReentrenando(true)
+    setResultadoReentreno(null)
+    reentrenarModeloMl(token, true)
+      .then((resultado) => {
+        setResultadoReentreno(resultado)
+        cargarEstadoModelo()
+      })
+      .catch((err) =>
+        setResultadoReentreno({
+          entrenado: false,
+          motivo: err instanceof ApiError ? err.message : 'No se pudo reentrenar el modelo.',
+        })
+      )
+      .finally(() => setReentrenando(false))
+  }
 
   if (cargando) {
     return (
@@ -172,6 +205,60 @@ function AdminPanel() {
           </ol>
         ) : (
           <p className="text-muted small mb-0">Todavía no hay lugares con valoraciones.</p>
+        )}
+      </div>
+
+      {/* ---- Modelo de recomendación (Machine Learning) ---- */}
+      <div className="ts-chart-card mt-4">
+        <div className="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+          <div>
+            <h2 className="h6 mb-1">Modelo de recomendación (Machine Learning)</h2>
+            {modelo ? (
+              <p className="small text-muted mb-0">
+                {modelo.nombre} · versión {modelo.version} · entrenado el {formatearFecha(modelo.fecha_entrenamiento)}
+                {modelo.metricas?.knn_contenido?.precision_at_k != null && (
+                  <> · Precision@{modelo.metricas.knn_contenido.k ?? 5} ={' '}
+                    {modelo.metricas.knn_contenido.precision_at_k}</>
+                )}
+              </p>
+            ) : (
+              <p className="small text-muted mb-0">Todavía no hay un modelo de Machine Learning activo.</p>
+            )}
+          </div>
+          <button className="btn btn-ts-outline btn-sm" onClick={reentrenarAhora} disabled={reentrenando}>
+            {reentrenando ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2"></span>
+                Reentrenando...
+              </>
+            ) : (
+              <>
+                <i className="bi bi-arrow-repeat me-1"></i> Reentrenar modelo ahora
+              </>
+            )}
+          </button>
+        </div>
+
+        {resultadoReentreno && (
+          <div
+            className={`alert ${
+              resultadoReentreno.entrenado
+                ? resultadoReentreno.activado
+                  ? 'alert-success'
+                  : 'alert-warning'
+                : 'alert-secondary'
+            } mb-0 small`}
+          >
+            <i className="bi bi-info-circle-fill me-1"></i>
+            {resultadoReentreno.motivo}
+            {resultadoReentreno.entrenado && (
+              <>
+                {' '}
+                (versión {resultadoReentreno.version}, Precision@5 nueva ={' '}
+                {resultadoReentreno.precision_nueva}, anterior = {resultadoReentreno.precision_anterior})
+              </>
+            )}
+          </div>
         )}
       </div>
     </div>
